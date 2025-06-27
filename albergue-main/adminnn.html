@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hostel Admin Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            background-color: #f9fafc;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navbar */
+        .top-navbar {
+            background-color: #1e3a8a;
+            padding: 15px 20px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .top-navbar img {
+            height: 40px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background-color: #0f2657;
+            padding: 20px;
+            color: #ffffff;
+            height: calc(100vh - 70px);
+            position: fixed;
+            top: 70px;
+            left: 0;
+            overflow-y: auto;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            z-index: 9;
+        }
+        .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+            padding: 14px;
+            margin-bottom: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+        }
+
+        .sidebar a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Content */
+        .container {
+            margin-left: 280px;
+            margin-top: 90px;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        /* Card Style */
+        .card {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #1e3a8a;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background-color: #e0e7ff;
+            color: #1e3a8a;
+            font-weight: bold;
+        }
+
+        .pending {
+            color: #f59e0b;
+            font-weight: bold;
+        }
+
+        .solved {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .granted {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .revoked {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .btn {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            margin-top: 12px;
+        }
+
+        .btn:hover {
+            background-color: #1e40af;
+        }
+
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #1e3a8a;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+
+        .btn-success {
+            background-color: #10b981;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-warning {
+            background-color: #f59e0b;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background-color: #e0e7ff;
+            padding: 20px;
+            border-radius: 10px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .form-action {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .summary-box {
+            margin-top: 20px;
+            background-color: #e0f2fe;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .download-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .notification-badge {
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            min-width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .alerts-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            padding: 10px;
+            border-left: 4px solid #1e3a8a;
+            background-color: #f8fafc;
+            margin-bottom: 10px;
+        }
+
+        .alert-item.urgent {
+            border-left-color: #ef4444;
+            background-color: #fef2f2;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-blue {
+            background-color: #e0e7ff;
+            color: #1e3a8a;
+        }
+
+        .badge-green {
+            background-color: #dcfce7;
+            color: #10b981;
+        }
+
+        .badge-yellow {
+            background-color: #fef3c7;
+            color: #f59e0b;
+        }
+
+        .badge-red {
+            background-color: #fee2e2;
+            color: #ef4444;
+        }
+
+        .registration-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .circle {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .circle-green {
+            background-color: #10b981;
+        }
+
+        .circle-red {
+            background-color: #ef4444;
+        }
+
+        .circle-yellow {
+            background-color: #f59e0b;
+        }
+
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            border-bottom-color: #1e3a8a;
+            font-weight: 500;
+            color: #1e3a8a;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .stat-card {
+                min-width: 150px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                width: 240px;
+                height: 100%;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .container {
+                margin-left: 0;
+                width: 100%;
+                padding: 16px;
+            }
+
+            .menu-toggle {
+                display: block;
+                position: relative;
+                background-color: transparent;
+                color: #ffffff;
+                padding: 8px 12px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 18px;
+            }
+
+            .top-navbar {
+                padding: 15px 10px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .stats-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .stat-card {
+                width: 100%;
+            }
+
+            .btn,
+            .btn-secondary {
+                width: 100%;
+                margin-top: 10px;
+                margin-left: 0;
+            }
+
+            .form-action {
+                flex-direction: column;
+            }
+
+            .filter-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .top-navbar span {
+                font-size: 16px;
+            }
+
+            th,
+            td {
+                padding: 8px;
+                font-size: 14px;
+            }
+
+            .container {
+                padding: 12px;
+                margin-top: 70px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .tab {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .menu-toggle {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-navbar">
+        <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+        <img src="logo albi.png" alt="Logo" style="filter: brightness(0) invert(1);">
+        <span>Hostel Admin Dashboard</span>
+        <button class="btn-secondary" onclick="logout()" style="margin-left: auto; margin-right: 10px;">Logout</button>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <a onclick="loadContent('dashboard')">📊 Dashboard</a>
+        <a onclick="loadContent('registrations')">📝 Registrations</a>
+        <a onclick="loadContent('leave')">🗓️ Leave Applications</a>
+        <a onclick="loadContent('complaints')">🔧 Complaints</a>
+        <a onclick="loadContent('attendance')">📋 Attendance</a>
+        <a onclick="loadContent('billing')">💰 Billing</a>
+        <a onclick="loadContent('alerts')">🔔 Alerts & Notifications</a>
+    </div>
+
+    <div class="container" id="content"></div>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4BvknExGN8_aWhuw7lT846Lk0gHGNMMg",
+            authDomain: "albergue-1985.firebaseapp.com",
+            projectId: "albergue-1985",
+            storageBucket: "albergue-1985.appspot.com",
+            messagingSenderId: "957761019612",
+            appId: "1:957761019612:web:f879fffb4999d3beb9de19"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Check admin status on page load
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                try {
+                    // Check if user is admin
+                    const adminRef = db.collection("admins").doc(user.uid);
+                    const adminDoc = await adminRef.get();
+
+                    if (!adminDoc.exists) {
+                        // Load dashboard by default when page loads
+                        loadContent('dashboard');
+                    } else {
+                        alert("You don't have admin privileges");
+                        logout();
+                    }
+                } catch (error) {
+                    console.error("Error checking admin status:", error);
+                    logout();
+                }
+            } else {
+                window.location.href = "albi.html";
+            }
+        });
+
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        function logout() {
+            firebase.auth().signOut().then(() => {
+                window.location.href = "albi.html";
+            }).catch((error) => {
+                console.error("Logout error:", error);
+                alert("Error signing out: " + error.message);
+            });
+        }
+
+        // Function to load content based on page
+        function loadContent(page) {
+            const content = document.getElementById('content');
+
+            // Close mobile menu after selection
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+
+            if (page === 'dashboard') {
+                loadDashboardContent();
+            } else if (page === 'registrations') {
+                loadRegistrationsContent();
+            } else if (page === 'leave') {
+                loadLeaveContent();
+            } else if (page === 'complaints') {
+                loadComplaintsContent();
+            } else if (page === 'attendance') {
+                loadAttendanceContent();
+            } else if (page === 'billing') {
+                loadBillingContent();
+            } else if (page === 'alerts') {
+                loadAlertsContent();
+            }
+        }
+
+        // Dashboard Content
+        async function loadDashboardContent() {
+            try {
+                // Get dashboard stats
+                const stats = await getDashboardStats();
+
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                <div class="card">
+                    <h1>Admin Dashboard</h1>
+                    <p>Welcome to the Hostel Management Admin System. Use the sidebar to navigate to different administrative features.</p>
+                    <div class="stats-container">
+                        <div class="stat-card" style="background-color: #e0e7ff;">
+                            <h3 style="margin-top: 0; color: #1e3a8a;">Pending Registrations</h3>
+                            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">${stats.pendingRegistrations}</p>
+                        </div>
+                        <div class="stat-card" style="background-color: #fee2e2;">
+                            <h3 style="margin-top: 0; color: #1e3a8a;">Pending Complaints</h3>
+                            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">${stats.pendingComplaints}</p>
+                        </div>
+                        <div class="stat-card" style="background-color: #fef3c7;">
+                            <h3 style="margin-top: 0; color: #1e3a8a;">Leave Requests</h3>
+                            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;">${stats.pendingLeaves}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h1>Recent Activities</h1>
+                    <div class="table-responsive">
+                        <table id="recentActivitiesTable">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Activity</th>
+                                    <th>Student</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" style="text-align: center;">Loading activities...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+
+                // Load recent activities
+                loadRecentActivities();
+            } catch (error) {
+                console.error("Error loading dashboard:", error);
+                const content = document.getElementById('content');
+                content.innerHTML = '<div class="card"><h1>Error</h1><p>Failed to load dashboard data</p></div>';
+            }
+        }
+
+        async function getDashboardStats() {
+            try {
+                // Get counts from Firestore
+                const pendingRegistrations = await db.collection("users")
+                    .where("status", "==", "pending")
+                    .get()
+                    .then(snapshot => snapshot.size);
+
+                const pendingComplaints = await db.collection("complaints")
+                    .where("status", "==", "Pending")
+                    .get()
+                    .then(snapshot => snapshot.size);
+
+                const pendingLeaves = await db.collection("leavePasses")
+                    .where("status", "==", "Pending")
+                    .get()
+                    .then(snapshot => snapshot.size);
+
+                return {
+                    pendingRegistrations,
+                    pendingComplaints,
+                    pendingLeaves
+                };
+            } catch (error) {
+                console.error("Error getting dashboard stats:", error);
+                return {
+                    pendingRegistrations: 0,
+                    pendingComplaints: 0,
+                    pendingLeaves: 0
+                };
+            }
+        }
+
+        async function loadRecentActivities() {
+            try {
+                const tableBody = document.querySelector('#recentActivitiesTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading activities...</td></tr>';
+
+                // Get recent activities from different collections
+                const recentComplaints = await db.collection("complaints")
+                    .orderBy("date", "desc")
+                    .limit(3)
+                    .get();
+
+                const recentLeaves = await db.collection("leavePasses")
+                    .orderBy("requestDate", "desc")
+                    .limit(3)
+                    .get();
+
+                const recentRegistrations = await db.collection("users")
+                    .orderBy("createdAt", "desc")
+                    .limit(2)
+                    .get();
+
+                const activities = [];
+
+                // Process complaints
+                recentComplaints.forEach(doc => {
+                    const data = doc.data();
+                    activities.push({
+                        type: "Complaint",
+                        student: data.studentName || "N/A",
+                        time: data.date?.toDate() || new Date(),
+                        status: data.status || "Pending",
+                        id: doc.id
+                    });
+                });
+
+                // Process leave applications
+                recentLeaves.forEach(doc => {
+                    const data = doc.data();
+                    activities.push({
+                        type: "Leave Application",
+                        student: data.studentName || "N/A",
+                        time: data.requestDate?.toDate() || new Date(),
+                        status: data.status || "Pending",
+                        id: doc.id
+                    });
+                });
+
+                // Process registrations
+                recentRegistrations.forEach(doc => {
+                    const data = doc.data();
+                    activities.push({
+                        type: "Registration",
+                        student: data.name || "N/A",
+                        time: data.createdAt?.toDate() || new Date(),
+                        status: data.status || "Pending",
+                        id: doc.id
+                    });
+                });
+
+                // Sort by time (newest first)
+                activities.sort((a, b) => b.time - a.time);
+
+                // Update table
+                tableBody.innerHTML = activities.map(activity => `
+                    <tr>
+                        <td>${activity.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                        <td>${activity.type}</td>
+                        <td>${activity.student}</td>
+                        <td><span class="badge ${getStatusBadgeClass(activity.status)}">${activity.status}</span></td>
+                        <td>
+                            <button class="btn-secondary" onclick="viewDetail('${activity.type.split(' ')[0]}', '${activity.id}')">View</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (error) {
+                console.error("Error loading recent activities:", error);
+                const tableBody = document.querySelector('#recentActivitiesTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Error loading activities</td></tr>';
+            }
+        }
+
+        // Helper function for status badge styling
+        function getStatusBadgeClass(status) {
+            switch (status.toLowerCase()) {
+                case 'pending': return 'badge-yellow';
+                case 'approved': return 'badge-green';
+                case 'resolved': return 'badge-green';
+                case 'rejected': return 'badge-red';
+                case 'inprogress': return 'badge-blue';
+                default: return 'badge-blue';
+            }
+        }
+
+        function viewDetail(type, id) {
+            if (type === 'Complaint') {
+                viewComplaintDetail(id);
+            } else if (type === 'Leave') {
+                viewLeaveDetails(id);
+            } else if (type === 'Registration') {
+                viewRegistrationDetails(id);
+            }
+        }
+
+        // Registration Management
+        async function loadRegistrationsContent() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+            <div class="card">
+                <h1>Student Registrations</h1>
+                <div class="table-responsive">
+                    <table id="registrationsTable">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Registration Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" style="text-align: center;">Loading registrations...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+
+            // Load registrations
+            loadRegistrations();
+        }
+
+        async function loadRegistrations() {
+            try {
+                const tableBody = document.querySelector('#registrationsTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Loading registrations...</td></tr>';
+
+                let query = db.collection("users").orderBy("createdAt", "desc");
+
+                const querySnapshot = await query.get();
+
+                if (querySnapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No registrations found</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const date = data.createdAt.toDate();
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${data.uid || doc.id}</td>
+                        <td>${data.name || 'N/A'}</td>
+                        <td>${data.email || 'N/A'}</td>
+                        <td>${formattedDate}</td>
+                        <td><span class="badge ${getStatusBadgeClass(data.status || 'pending')}">${data.status || 'Pending'}</span></td>
+                        <td>
+                            ${data.status === 'approved' ?
+                            `<button class="btn-secondary" onclick="viewRegistrationDetails('${doc.id}')">View</button>` :
+                            `<button class="btn-success" onclick="approveRegistration('${doc.id}')">Approve</button>
+                                <button class="btn-danger" onclick="rejectRegistration('${doc.id}')">Reject</button>
+                                <button class="btn-secondary" onclick="viewRegistrationDetails('${doc.id}')">View</button>`
+                        }
+                        </td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Error loading registrations:", error);
+                const tableBody = document.querySelector('#registrationsTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading registrations</td></tr>';
+            }
+        }
+
+        async function approveRegistration(userId) {
+            if (confirm("Are you sure you want to approve this registration?")) {
+                try {
+                    await db.collection("users").doc(userId).update({
+                        status: "approved",
+                        approvedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    alert("Registration approved successfully!");
+                    loadRegistrations();
+                } catch (error) {
+                    console.error("Error approving registration:", error);
+                    alert("Error approving registration: " + error.message);
+                }
+            }
+        }
+
+        async function rejectRegistration(userId) {
+            if (confirm("Are you sure you want to reject this registration? This will delete the user account.")) {
+                try {
+                    // First delete the user from authentication
+                    const userDoc = await db.collection("users").doc(userId).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data();
+                        if (userData.email) {
+                            // Get the user from auth
+                            const user = await auth.getUserByEmail(userData.email);
+                            if (user) {
+                                await auth.deleteUser(user.uid);
+                            }
+                        }
+                    }
+                    
+                    // Then delete the user document
+                    await db.collection("users").doc(userId).delete();
+                    
+                    alert("Registration rejected and user account deleted successfully!");
+                    loadRegistrations();
+                } catch (error) {
+                    console.error("Error rejecting registration:", error);
+                    console.error("Error code:", error.code);
+                    console.error("Error message:", error.message);
+                    alert("Error rejecting registration: " + error.message);
+                }
+            }
+        }
+
+        async function viewRegistrationDetails(userId) {
+            try {
+                const doc = await db.collection("users").doc(userId).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const createdAt = data.createdAt.toDate();
+                    const formattedDate = createdAt.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    let details = `
+                        <div class="card">
+                            <h2>Registration Details</h2>
+                            <p><strong>ID:</strong> ${userId}</p>
+                            <p><strong>Name:</strong> ${data.name || 'N/A'}</p>
+                            <p><strong>Email:</strong> ${data.email || 'N/A'}</p>
+                            <p><strong>Registration Date:</strong> ${formattedDate}</p>
+                            <p><strong>Status:</strong> ${data.status || 'Pending'}</p>
+                    `;
+
+                    if (data.approvedAt) {
+                        const approvedDate = data.approvedAt.toDate();
+                        const formattedApprovedDate = approvedDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        details += `<p><strong>Approved On:</strong> ${formattedApprovedDate}</p>`;
+                    }
+
+                    if (data.rejectedAt) {
+                        const rejectedDate = data.rejectedAt.toDate();
+                        const formattedRejectedDate = rejectedDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        details += `<p><strong>Rejected On:</strong> ${formattedRejectedDate}</p>`;
+                    }
+
+                    // Add any additional user details
+                    if (data.phone) details += `<p><strong>Phone:</strong> ${data.phone}</p>`;
+                    if (data.address) details += `<p><strong>Address:</strong> ${data.address}</p>`;
+
+                    details += `</div>`;
+
+                    // Use the showModal function instead of creating modal manually
+                    showModal(details);
+                } else {
+                    alert("Registration not found!");
+                }
+            } catch (error) {
+                console.error("Error viewing registration:", error);
+                alert("Error loading registration details");
+            }
+        }
+
+        // Complaints Management - Simplified version
+        async function loadComplaintsContent() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+            <div class="card">
+                <h1>Recent Complaints</h1>
+                <div class="table-responsive">
+                    <table id="complaintsTable">
+                        <thead>
+                          <tr>
+                            <th>Time</th>
+                            <th>Student</th>
+                            <th>Category</th>
+                            <th>Issue</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" style="text-align: center;">Loading complaints...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+
+            // Load complaints
+            loadRecentComplaints();
+        }
+
+        async function loadRecentComplaints() {
+            try {
+                const tableBody = document.querySelector('#complaintsTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading complaints...</td></tr>';
+
+                const querySnapshot = await db.collection("complaints")
+                    .orderBy("date", "desc")
+                    .limit(10)
+                    .get();
+
+                if (querySnapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No complaints found</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const date = data.date.toDate();
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+    <td>${formattedDate}</td>
+    <td>${data.studentName || 'N/A'}</td>
+    <td>${data.category || 'N/A'}</td>
+    <td>${data.description?.substring(0, 50) || 'N/A'}${data.description?.length > 50 ? '...' : ''}</td>
+    <td><span class="badge ${getStatusBadgeClass(data.status)}">${data.status || 'Pending'}</span></td>
+    <td>
+        <button class="btn-secondary" onclick="viewComplaintDetail('${doc.id}')">View</button>
+        ${data.status === 'Pending' ? 
+            `<button class="btn-success" onclick="resolveComplaint('${doc.id}')">Resolve</button>` : 
+            ''
+        }
+    </td>
+`;
+
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Error loading complaints:", error);
+                const tableBody = document.querySelector('#complaintsTable tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">Error loading complaints</td></tr>';
+                }
+            }
+        }
+
+        // Function to resolve a complaint
+        async function resolveComplaint(complaintId) {
+            if (confirm("Are you sure you want to mark this complaint as resolved?")) {
+                try {
+                    await db.collection("complaints").doc(complaintId).update({
+                        status: "Resolved",
+                        resolvedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    alert("Complaint marked as resolved successfully!");
+                    loadRecentComplaints();
+                } catch (error) {
+                    console.error("Error resolving complaint:", error);
+                    alert("Error resolving complaint: " + error.message);
+                }
+            }
+        }
+
+        // Function to view complaint details
+        async function viewComplaintDetail(complaintId) {
+            try {
+                const doc = await db.collection("complaints").doc(complaintId).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const date = data.date.toDate();
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    let details = `
+                        <div class="card">
+                            <h2>Complaint Details</h2>
+                            <p><strong>ID:</strong> ${complaintId}</p>
+                            <p><strong>Student:</strong> ${data.studentName || 'N/A'}</p>
+                            <p><strong>Room:</strong> ${data.room || 'N/A'}</p>
+                            <p><strong>Category:</strong> ${data.category || 'N/A'}</p>
+                            <p><strong>Priority:</strong> ${data.priority || 'Medium'}</p>
+                            <p><strong>Status:</strong> ${data.status || 'Pending'}</p>
+                            <p><strong>Date:</strong> ${formattedDate}</p>
+                            <p><strong>Description:</strong></p>
+                            <p>${data.description || 'No description provided'}</p>
+                    `;
+
+                    // Add assigned info if available
+                    if (data.assignedTo) {
+                        const assignedDate = data.assignedDate?.toDate();
+                        const formattedAssignedDate = assignedDate ? assignedDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }) : 'N/A';
+
+                        details += `
+                            <p><strong>Assigned To:</strong> ${data.assignedTo}</p>
+                            <p><strong>Assigned Date:</strong> ${formattedAssignedDate}</p>
+                        `;
+                    }
+
+                    // Add resolved info if available
+                    if (data.resolvedAt) {
+                        const resolvedDate = data.resolvedAt.toDate();
+                        const formattedResolvedDate = resolvedDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        details += `
+                            <p><strong>Resolved Date:</strong> ${formattedResolvedDate}</p>
+                        `;
+
+                        if (data.resolutionNotes) {
+                            details += `
+                                <p><strong>Resolution Notes:</strong></p>
+                                <p>${data.resolutionNotes}</p>
+                            `;
+                        }
+                    }
+
+                    details += `</div>`;
+
+                    // Use the showModal function instead of creating modal manually
+                    showModal(details);
+                } else {
+                    alert("Complaint not found!");
+                }
+            } catch (error) {
+                console.error("Error viewing complaint:", error);
+                alert("Error loading complaint details");
+            }
+        }
+
+        // Leave Management - Simplified version
+        async function loadLeaveContent() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+            <div class="card">
+                <h1>Recent Leave Applications</h1>
+                <div class="table-responsive">
+                    <table id="leaveTable">
+                        <thead>
+                           <tr>
+    <th>Time</th>
+    <th>Student</th>
+    <th>Status</th>
+    <th>Action</th>
+</tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" style="text-align: center;">Loading leave applications...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+
+            // Load leave applications
+            loadRecentLeaveApplications();
+        }
+
+        async function loadRecentLeaveApplications() {
+            try {
+                const tableBody = document.querySelector('#leaveTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Loading leave applications...</td></tr>';
+
+                const querySnapshot = await db.collection("leavePasses")
+                    .orderBy("requestDate", "desc")
+                    .limit(10)
+                    .get();
+
+                if (querySnapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No leave applications found</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const requestDate = data.requestDate.toDate();
+                    const formattedDate = requestDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+    <td>${formattedDate}</td>
+    <td>${data.studentName || 'N/A'}</td>
+    <td><span class="badge ${getStatusBadgeClass(data.status)}">${data.status || 'Pending'}</span></td>
+    <td>
+        <button class="btn-secondary" onclick="viewLeaveDetails('${doc.id}')">View</button>
+        ${data.status === 'Pending' ? 
+            `<button class="btn-success" onclick="approveLeave('${doc.id}')">Approve</button>
+             <button class="btn-danger" onclick="rejectLeave('${doc.id}')">Reject</button>` :
+            ''
+        }
+    </td>
+`;
+
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Error loading leave applications:", error);
+                const tableBody = document.querySelector('#leaveTable tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading leave applications</td></tr>';
+                }
+            }
+        }
+
+        async function approveLeave(leaveId) {
+            if (confirm("Are you sure you want to approve this leave application?")) {
+                try {
+                    await db.collection("leavePasses").doc(leaveId).update({
+                        status: "Approved",
+                        approvedDate: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    alert("Leave application approved successfully!");
+                    loadRecentLeaveApplications();
+                } catch (error) {
+                    console.error("Error approving leave:", error);
+                    alert("Error approving leave: " + error.message);
+                }
+            }
+        }
+
+        async function rejectLeave(leaveId) {
+            const reason = prompt("Please enter reason for rejection:");
+            if (reason) {
+                try {
+                    await db.collection("leavePasses").doc(leaveId).update({
+                        status: "Rejected",
+                        rejectedDate: firebase.firestore.FieldValue.serverTimestamp(),
+                        rejectionReason: reason
+                    });
+                    alert("Leave application rejected successfully!");
+                    loadRecentLeaveApplications();
+                } catch (error) {
+                    console.error("Error rejecting leave:", error);
+                    alert("Error rejecting leave: " + error.message);
+                }
+            }
+        }
+
+        async function viewLeaveDetails(leaveId) {
+            try {
+                const doc = await db.collection("leavePasses").doc(leaveId).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const fromDate = data.fromDate.toDate();
+                    const toDate = data.toDate.toDate();
+                    const requestDate = data.requestDate.toDate();
+
+                    const formattedFromDate = fromDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+
+                    const formattedToDate = toDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+
+                    const formattedRequestDate = requestDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    let details = `
+                        <div class="card">
+                            <h2>Leave Application Details</h2>
+                            <p><strong>ID:</strong> ${leaveId}</p>
+                            <p><strong>Student:</strong> ${data.studentName || 'N/A'}</p>
+                            <p><strong>Room:</strong> ${data.room || 'N/A'}</p>
+                            <p><strong>Leave Type:</strong> ${data.leaveType || 'N/A'}</p>
+                            <p><strong>Status:</strong> ${data.status || 'Pending'}</p>
+                            <p><strong>Request Date:</strong> ${formattedRequestDate}</p>
+                            <p><strong>From:</strong> ${formattedFromDate}</p>
+                            <p><strong>To:</strong> ${formattedToDate}</p>
+                            <p><strong>Reason:</strong></p>
+                            <p>${data.reason || 'No reason provided'}</p>
+                    `;
+
+                    // Add approved info if available
+                    if (data.approvedDate) {
+                        const approvedDate = data.approvedDate.toDate();
+                        const formattedApprovedDate = approvedDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        details += `
+                            <p><strong>Approved Date:</strong> ${formattedApprovedDate}</p>
+                        `;
+
+                        if (data.approvedBy) {
+                            details += `<p><strong>Approved By:</strong> ${data.approvedBy}</p>`;
+                        }
+                    }
+
+                    // Add rejected info if available
+                    if (data.rejectedDate) {
+                        const rejectedDate = data.rejectedDate.toDate();
+                        const formattedRejectedDate = rejectedDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        details += `
+                            <p><strong>Rejected Date:</strong> ${formattedRejectedDate}</p>
+                            <p><strong>Rejection Reason:</strong> ${data.rejectionReason || 'No reason provided'}</p>
+                        `;
+
+                        if (data.rejectedBy) {
+                            details += `<p><strong>Rejected By:</strong> ${data.rejectedBy}</p>`;
+                        }
+                    }
+
+                    details += `</div>`;
+
+                    // Use the showModal function instead of creating modal manually
+                    showModal(details);
+                } else {
+                    alert("Leave application not found!");
+                }
+            } catch (error) {
+                console.error("Error viewing leave application:", error);
+                alert("Error loading leave application details");
+            }
+        }
+
+        // Attendance Management
+        async function loadAttendanceContent() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+            <div class="card">
+                <h1>Attendance Management</h1>
+                <div class="filter-container">
+                    <div class="filter-item">
+                        <label for="attendanceDate">Date:</label>
+                        <input type="date" id="attendanceDate" class="form-input" style="width: auto; padding: 6px;" value="${new Date().toISOString().split('T')[0]}">
+                    </div>
+                    <div class="filter-item">
+                        <label for="attendanceBlock">Block:</label>
+                        <select id="attendanceBlock" class="form-input" style="width: auto; padding: 6px;">
+                            <option value="all">All Blocks</option>
+                            <option value="A">Block A</option>
+                            <option value="B">Block B</option>
+                            <option value="C">Block C</option>
+                            <option value="D">Block D</option>
+                        </select>
+                    </div>
+                    <button class="btn" style="margin-top: 0;" onclick="loadAttendanceRecords()">Load Records</button>
+                    <button class="btn-success" style="margin-top: 0; margin-left: 10px;" onclick="markAllPresent()">Mark All Present</button>
+                </div>
+                <div class="table-responsive">
+                    <table id="attendanceTable">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Room</th>
+                                <th>Block</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" style="text-align: center;">Select date and click "Load Records"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+        }
+
+        async function loadAttendanceRecords() {
+            try {
+                const date = document.getElementById('attendanceDate').value;
+                const block = document.getElementById('attendanceBlock').value;
+                const tableBody = document.querySelector('#attendanceTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Loading attendance records...</td></tr>';
+
+                // Get all students (filter by block if specified)
+                let studentsQuery = db.collection("users").where("status", "==", "approved");
+
+                if (block !== 'all') {
+                    studentsQuery = studentsQuery.where("block", "==", block);
+                }
+
+                const studentsSnapshot = await studentsQuery.get();
+
+                if (studentsSnapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No students found</td></tr>';
+                    return;
+                }
+
+                // Get attendance records for the selected date
+                const selectedDate = new Date(date);
+                const startOfDay = new Date(selectedDate.setHours(0, 0, 0, 0));
+                const endOfDay = new Date(selectedDate.setHours(23, 59, 59, 999));
+
+                const attendanceSnapshot = await db.collection("attendance")
+                    .where("date", ">=", startOfDay)
+                    .where("date", "<=", endOfDay)
+                    .get();
+
+                // Create a map of studentId to attendance status
+                const attendanceMap = {};
+                attendanceSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    attendanceMap[data.studentId] = data.status;
+                });
+
+                // Populate the table
+                tableBody.innerHTML = '';
+
+                studentsSnapshot.forEach(doc => {
+                    const studentData = doc.data();
+                    const studentId = doc.id;
+                    const status = attendanceMap[studentId] || 'Absent';
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${studentId}</td>
+                        <td>${studentData.name || 'N/A'}</td>
+                        <td>${studentData.room || 'N/A'}</td>
+                        <td>${studentData.block || 'N/A'}</td>
+                        <td><span class="badge ${status === 'Present' ? 'badge-green' : 'badge-red'}">${status}</span></td>
+                        <td>
+                            <button class="btn-success" onclick="markAttendance('${studentId}', 'Present', '${date}')">Present</button>
+                            <button class="btn-danger" onclick="markAttendance('${studentId}', 'Absent', '${date}')">Absent</button>
+                        </td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Error loading attendance records:", error);
+                const tableBody = document.querySelector('#attendanceTable tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading attendance records</td></tr>';
+                }
+            }
+        }
+
+        async function markAttendance(studentId, status, dateString) {
+            try {
+                const date = new Date(dateString);
+                date.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+
+                // Check if there's an existing record
+                const existingRecord = await db.collection("attendance")
+                    .where("studentId", "==", studentId)
+                    .where("date", ">=", new Date(date.setHours(0, 0, 0, 0)))
+                    .where("date", "<=", new Date(date.setHours(23, 59, 59, 999)))
+                    .get();
+
+                if (!existingRecord.empty) {
+                    // Update existing record
+                    await db.collection("attendance").doc(existingRecord.docs[0].id).update({
+                        status: status,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } else {
+                    // Create new record - first ensure student data exists
+                    const studentDoc = await db.collection("users").doc(studentId).get();
+
+                    if (!studentDoc.exists) {
+                        throw new Error("Student not found");
+                    }
+
+                    const studentData = studentDoc.data();
+
+                    // Prepare attendance data with fallback values
+                    const attendanceData = {
+                        studentId: studentId,
+                        studentName: studentData.name || 'Unknown',
+                        room: studentData.room || 'Not Assigned',
+                        block: studentData.block || 'Unknown',
+                        date: date,
+                        status: status,
+                        markedBy: auth.currentUser.uid,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    await db.collection("attendance").add(attendanceData);
+                }
+
+                // Reload the records
+                loadAttendanceRecords();
+            } catch (error) {
+                console.error("Error marking attendance:", error);
+                alert("Error marking attendance: " + error.message);
+            }
+        }
+
+        async function markAllPresent() {
+            if (confirm("Are you sure you want to mark all students as present for the selected date?")) {
+                try {
+                    const date = document.getElementById('attendanceDate').value;
+                    const block = document.getElementById('attendanceBlock').value;
+
+                    // Get all approved students
+                    let studentsQuery = db.collection("users").where("status", "==", "approved");
+
+                    if (block !== 'all') {
+                        studentsQuery = studentsQuery.where("block", "==", block);
+                    }
+
+                    const studentsSnapshot = await studentsQuery.get();
+
+                    if (studentsSnapshot.empty) {
+                        alert("No approved students found to generate bills");
+                        return;
+                    }
+
+                    // Process each student
+                    const batch = db.batch();
+                    const attendanceDate = new Date(date);
+                    attendanceDate.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
+
+                    // Get existing attendance records for the date
+                    const startOfDay = new Date(attendanceDate);
+                    startOfDay.setHours(0, 0, 0, 0);
+                    const endOfDay = new Date(attendanceDate);
+                    endOfDay.setHours(23, 59, 59, 999);
+
+                    const existingRecords = await db.collection("attendance")
+                        .where("date", ">=", startOfDay)
+                        .where("date", "<=", endOfDay)
+                        .get();
+
+                    const existingMap = {};
+                    existingRecords.forEach(doc => {
+                        existingMap[doc.data().studentId] = doc.id;
+                    });
+
+                    studentsSnapshot.forEach(doc => {
+                        const studentId = doc.id;
+                        const studentData = doc.data();
+
+                        // Ensure required fields have fallback values
+                        const attendanceData = {
+                            studentId: studentId,
+                            studentName: studentData.name || 'Unknown',
+                            room: studentData.room || 'Not Assigned',
+                            block: studentData.block || 'Unknown',
+                            date: attendanceDate,
+                            status: "Present",
+                            markedBy: auth.currentUser.uid,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+
+                        if (existingMap[studentId]) {
+                            // Update existing record
+                            const recordRef = db.collection("attendance").doc(existingMap[studentId]);
+                            batch.update(recordRef, {
+                                status: "Present",
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        } else {
+                            // Create new record
+                            const recordRef = db.collection("attendance").doc();
+                            batch.set(recordRef, attendanceData);
+                        }
+                    });
+
+                    await batch.commit();
+                    alert("All students marked as present successfully!");
+                    loadAttendanceRecords();
+                } catch (error) {
+                    console.error("Error marking all present:", error);
+                    alert("Error marking all present: " + error.message);
+                }
+            }
+        }
+
+        // Billing Management
+        async function loadBillingContent() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+            <div class="card">
+                <h1>Billing Management</h1>
+                <div class="table-responsive">
+                    <table id="billsTable">
+                        <thead>
+                            <tr>
+                                <th>Bill ID</th>
+                                <th>Student</th>
+                                <th>Room</th>
+                                <th>Month</th>
+                                <th>Year</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="9" style="text-align: center;">Loading bills...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn" style="margin-top: 20px;" onclick="generateBills()">Generate Monthly Bills</button>
+            </div>`;
+
+            // Load bills
+            loadBills();
+        }
+
+        async function loadBills() {
+            try {
+                const tableBody = document.querySelector('#billsTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">Loading bills...</td></tr>';
+
+                let query = db.collection("bills").orderBy("dueDate", "asc");
+
+                const querySnapshot = await query.get();
+
+                if (querySnapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No bills found</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const dueDate = data.dueDate.toDate();
+                    const formattedDueDate = dueDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+
+                    const monthNames = ["January", "February", "March", "April", "May", "June",
+                        "July", "August", "September", "October", "November", "December"];
+                    const monthName = monthNames[data.month - 1];
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${doc.id}</td>
+                        <td>${data.studentName || 'N/A'}</td>
+                        <td>${data.room || 'N/A'}</td>
+                        <td>${monthName}</td>
+                        <td>${data.year}</td>
+                        <td>$${data.amount.toFixed(2)}</td>
+                        <td>${formattedDueDate}</td>
+                        <td><span class="badge ${getStatusBadgeClass(data.status)}">${data.status}</span></td>
+                        <td>
+                            ${data.status === 'Paid' ?
+                            `<button class="btn-secondary" onclick="viewBillDetails('${doc.id}')">View</button>` :
+                            `<button class="btn-success" onclick="markBillPaid('${doc.id}')">Mark Paid</button>
+                                 <button class="btn-secondary" onclick="viewBillDetails('${doc.id}')">View</button>`
+                        }
+                        </td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Error loading bills:", error);
+                const tableBody = document.querySelector('#billsTable tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: red;">Error loading bills</td></tr>';
+                }
+            }
+        }
+
+        async function markBillPaid(billId) {
+            const paymentMethod = prompt("Enter payment method (Cash/Bank Transfer/Card):");
+            if (paymentMethod) {
+                try {
+                    await db.collection("bills").doc(billId).update({
+                        status: "Paid",
+                        paymentDate: firebase.firestore.FieldValue.serverTimestamp(),
+                        paymentMethod: paymentMethod,
+                        receivedBy: auth.currentUser.uid
+                    });
+                    alert("Bill marked as paid successfully!");
+                    loadBills();
+                } catch (error) {
+                    console.error("Error marking bill as paid:", error);
+                    alert("Error marking bill as paid: " + error.message);
+                }
+            }
+        }
+
+        async function viewBillDetails(billId) {
+            try {
+                const doc = await db.collection("bills").doc(billId).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const dueDate = data.dueDate.toDate();
+                    const formattedDueDate = dueDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+
+                    const monthNames = ["January", "February", "March", "April", "May", "June",
+                        "July", "August", "September", "October", "November", "December"];
+                    const monthName = monthNames[data.month - 1];
+
+                    let details = `
+                        <div class="card">
+                            <h2>Bill Details</h2>
+                            <p><strong>Bill ID:</strong> ${billId}</p>
+                            <p><strong>Student:</strong> ${data.studentName || 'N/A'}</p>
+                            <p><strong>Room:</strong> ${data.room || 'N/A'}</p>
+                            <p><strong>Period:</strong> ${monthName} ${data.year}</p>
+                            <p><strong>Amount:</strong> $${data.amount.toFixed(2)}</p>
+                            <p><strong>Due Date:</strong> ${formattedDueDate}</p>
+                            <p><strong>Status:</strong> ${data.status || 'Pending'}</p>
+                            <p><strong>Generated On:</strong> ${data.createdAt.toDate().toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}</p>
+                    `;
+
+                    // Add payment info if available
+                    if (data.paymentDate) {
+                        const paymentDate = data.paymentDate.toDate();
+                        const formattedPaymentDate = paymentDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        details += `
+                            <p><strong>Payment Date:</strong> ${formattedPaymentDate}</p>
+                            <p><strong>Payment Method:</strong> ${data.paymentMethod || 'N/A'}</p>
+                        `;
+
+                        if (data.receivedBy) {
+                            const receivedByDoc = await db.collection("admins").doc(data.receivedBy).get();
+                            const receivedByName = receivedByDoc.exists ? receivedByDoc.data().name : 'Unknown';
+                            details += `<p><strong>Received By:</strong> ${receivedByName}</p>`;
+                        }
+                    }
+
+                    // Add bill items if available
+                    if (data.items && data.items.length > 0) {
+                        details += `
+                            <p><strong>Bill Items:</strong></p>
+                            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                                <thead>
+                                    <tr style="background-color: #f3f4f6;">
+                                        <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Item</th>
+                                        <th style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.items.map(item => `
+                                        <tr>
+                                            <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.description}</td>
+                                            <td style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd;">$${item.amount.toFixed(2)}</td>
+                                        </tr>
+                                    `).join('')}
+                                    <tr style="font-weight: bold;">
+                                        <td style="padding: 8px; border-top: 2px solid #ddd;">Total</td>
+                                        <td style="padding: 8px; text-align: right; border-top: 2px solid #ddd;">$${data.amount.toFixed(2)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        `;
+                    }
+
+                    details += `</div>`;
+
+                    // Use the showModal function instead of creating modal manually
+                    showModal(details);
+                } else {
+                    alert("Bill not found!");
+                }
+            } catch (error) {
+                console.error("Error viewing bill:", error);
+                alert("Error loading bill details");
+            }
+        }
+
+        async function generateBills() {
+            const currentDate = new Date();
+            const currentMonth = currentDate.getMonth() + 1; // Months are 0-indexed
+            const currentYear = currentDate.getFullYear();
+
+            if (confirm(`Are you sure you want to generate monthly bills for ${getMonthName(currentMonth)} ${currentYear}?`)) {
+                try {
+                    // Get all approved students
+                    const studentsSnapshot = await db.collection("users")
+                        .where("status", "==", "approved")
+                        .get();
+
+                    if (studentsSnapshot.empty) {
+                        alert("No approved students found to generate bills");
+                        return;
+                    }
+
+                    // Check if bills already exist for this month/year
+                    const existingBills = await db.collection("bills")
+                        .where("month", "==", currentMonth)
+                        .where("year", "==", currentYear)
+                        .get();
+
+                    if (!existingBills.empty) {
+                        if (!confirm(`Bills for ${getMonthName(currentMonth)} ${currentYear} already exist. Regenerate them?`)) {
+                            return;
+                        }
+
+                        // Delete existing bills
+                        const deleteBatch = db.batch();
+                        existingBills.forEach(doc => {
+                            deleteBatch.delete(doc.ref);
+                        });
+                        await deleteBatch.commit();
+                    }
+
+                    // Create due date (15th of the current month)
+                    const dueDate = new Date(currentYear, currentMonth - 1, 15);
+
+                    // Generate bills for each student
+                    const generateBatch = db.batch();
+                    const hostelFee = 500; // Base hostel fee
+
+                    studentsSnapshot.forEach(doc => {
+                        const studentData = doc.data();
+                        const billRef = db.collection("bills").doc();
+
+                        // Calculate any additional charges (damages, late fees, etc.)
+                        const additionalCharges = 0; // Could be calculated based on student records
+
+                        generateBatch.set(billRef, {
+                            studentId: doc.id,
+                            studentName: studentData.name,
+                            room: studentData.room,
+                            block: studentData.block,
+                            month: currentMonth,
+                            year: currentYear,
+                            amount: hostelFee + additionalCharges,
+                            dueDate: dueDate,
+                            status: "Pending",
+                            items: [
+                                { description: "Hostel Fee", amount: hostelFee },
+                                { description: "Additional Charges", amount: additionalCharges }
+                            ],
+                            generatedBy: auth.currentUser.uid,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    });
+
+                    await generateBatch.commit();
+                    alert(`Successfully generated ${studentsSnapshot.size} bills for ${getMonthName(currentMonth)} ${currentYear}!`);
+                    loadBills();
+                } catch (error) {
+                    console.error("Error generating bills:", error);
+                    alert("Error generating bills: " + error.message);
+                }
+            }
+        }
+
+        function getMonthName(month) {
+            const monthNames = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"];
+            return monthNames[month - 1];
+        }
+
+        // Alerts & Notifications
+        async function loadAlertsContent() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+            <div class="card">
+                <h1>Alerts & Notifications</h1>
+                <div class="table-responsive">
+                    <table id="alertsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Title</th>
+                                <th>Message</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" style="text-align: center;">Loading alerts...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card">
+                <h1>Send Notification</h1>
+                <div class="form-group">
+                    <label for="notificationType">Notification Type:</label>
+                    <select id="notificationType" class="form-input">
+                        <option value="general">General Announcement</option>
+                        <option value="maintenance">Maintenance Notice</option>
+                        <option value="billing">Billing Reminder</option>
+                        <option value="security">Security Alert</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notificationTitle">Title:</label>
+                    <input type="text" id="notificationTitle" class="form-input" placeholder="Enter notification title">
+                </div>
+                <div class="form-group">
+                    <label for="notificationMessage">Message:</label>
+                    <textarea id="notificationMessage" class="form-input" rows="4" placeholder="Enter notification message"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="notificationRecipients">Recipients:</label>
+                    <select id="notificationRecipients" class="form-input">
+                        <option value="all">All Students</option>
+                        <option value="blockA">Block A Only</option>
+                        <option value="blockB">Block B Only</option>
+                        <option value="blockC">Block C Only</option>
+                        <option value="blockD">Block D Only</option>
+                        <option value="pendingBills">Students with Pending Bills</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="sendNotification()">Send Notification</button>
+            </div>`;
+
+            // Load alerts
+            loadAlerts();
+        }
+
+        async function loadAlerts() {
+            try {
+                const tableBody = document.querySelector('#alertsTable tbody');
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Loading alerts...</td></tr>';
+
+                let query = db.collection("alerts").where("recipient", "==", "admin").orderBy("createdAt", "desc");
+
+                const querySnapshot = await query.get();
+
+                if (querySnapshot.empty) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No alerts found</td></tr>';
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const date = data.createdAt.toDate();
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${formattedDate}</td>
+                        <td>${data.type || 'N/A'}</td>
+                        <td>${data.title || 'N/A'}</td>
+                        <td>${data.message.length > 50 ? data.message.substring(0, 50) + '...' : data.message}</td>
+                        <td><span class="badge ${data.status === 'read' ? 'badge-blue' : 'badge-red'}">${data.status}</span></td>
+                        <td>
+                            <button class="btn-secondary" onclick="viewAlertDetail('${doc.id}')">View</button>
+                            ${data.status === 'unread' ?
+                            `<button class="btn-success" onclick="markAlertRead('${doc.id}')">Mark Read</button>` :
+                            ''
+                        }
+                        </td>
+                    `;
+
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Error loading alerts:", error);
+                const tableBody = document.querySelector('#alertsTable tbody');
+                if (tableBody) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading alerts</td></tr>';
+                }
+            }
+        }
+
+        async function markAlertRead(alertId) {
+            try {
+                await db.collection("alerts").doc(alertId).update({
+                    status: "read",
+                    readAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                // Reload alerts to update the table
+                loadAlerts();
+            } catch (error) {
+                console.error("Error marking alert as read:", error);
+                alert("Error marking alert as read");
+            }
+        }
+
+        async function viewAlertDetail(alertId) {
+            try {
+                const doc = await db.collection("alerts").doc(alertId).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const date = data.createdAt.toDate();
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    let details = `
+                        <div class="card">
+                            <h2>Alert Details</h2>
+                            <p><strong>Date:</strong> ${formattedDate}</p>
+                            <p><strong>Type:</strong> ${data.type || 'N/A'}</p>
+                            <p><strong>Title:</strong> ${data.title || 'N/A'}</p>
+                            <p><strong>Status:</strong> ${data.status || 'unread'}</p>
+                            <p><strong>Message:</strong></p>
+                            <p>${data.message || 'No message'}</p>
+                    `;
+
+                    // Add read date if available
+                    if (data.readAt) {
+                        const readDate = data.readAt.toDate();
+                        const formattedReadDate = readDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        details += `<p><strong>Read On:</strong> ${formattedReadDate}</p>`;
+                    }
+
+                    details += `</div>`;
+
+                    // Use the showModal function instead of creating modal manually
+                    showModal(details);
+
+                    // Mark as read when viewed if unread
+                    if (data.status === 'unread') {
+                        await markAlertRead(alertId);
+                    }
+                } else {
+                    alert("Alert not found!");
+                }
+            } catch (error) {
+                console.error("Error viewing alert:", error);
+                alert("Error loading alert details");
+            }
+        }
+
+        async function sendNotification() {
+            const type = document.getElementById('notificationType').value;
+            const title = document.getElementById('notificationTitle').value.trim();
+            const message = document.getElementById('notificationMessage').value.trim();
+            const recipients = document.getElementById('notificationRecipients').value;
+
+            if (!title || !message) {
+                alert("Please enter both title and message");
+                return;
+            }
+
+            try {
+                // Determine recipient list
+                let studentQuery = db.collection("users").where("status", "==", "approved");
+
+                if (recipients !== 'all') {
+                    if (recipients.startsWith('block')) {
+                        const block = recipients.replace('block', '').toUpperCase();
+                        studentQuery = studentQuery.where("block", "==", block);
+                    } else if (recipients === 'pendingBills') {
+                        // Get students with pending bills
+                        const pendingBills = await db.collection("bills")
+                            .where("status", "==", "Pending")
+                            .get();
+
+                        if (pendingBills.empty) {
+                            alert("No students with pending bills found");
+                            return;
+                        }
+
+                        const studentIds = [...new Set(pendingBills.docs.map(doc => doc.data().studentId))];
+                        studentQuery = studentQuery.where(firebase.firestore.FieldPath.documentId(), 'in', studentIds);
+                    }
+                }
+
+                const studentsSnapshot = await studentQuery.get();
+
+                if (studentsSnapshot.empty) {
+                    alert("No matching students found to send notification");
+                    return;
+                }
+
+                // Send notification to each student
+                const batch = db.batch();
+                studentsSnapshot.forEach(doc => {
+                    const notificationRef = db.collection("alerts").doc();
+                    batch.set(notificationRef, {
+                        recipient: doc.id,
+                        recipientType: "student",
+                        type: type,
+                        title: title,
+                        message: message,
+                        status: "unread",
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        sentBy: auth.currentUser.uid
+                    });
+                });
+
+                await batch.commit();
+                alert(`Notification sent to ${studentsSnapshot.size} students successfully!`);
+
+                // Clear form
+                document.getElementById('notificationTitle').value = '';
+                document.getElementById('notificationMessage').value = '';
+                
+                // Reload alerts to show the new ones
+                loadAlerts();
+            } catch (error) {
+                console.error("Error sending notification:", error);
+                alert("Error sending notification: " + error.message);
+            }
+        }
+
+        // Utility function to format date
+        function formatDate(date) {
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function showModal(content) {
+            // Close any existing modal first
+            closeModal();
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    ${content}
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="btn" onclick="closeModal()">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function closeModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+        }
+    </script>
+</body>
+
+</html>

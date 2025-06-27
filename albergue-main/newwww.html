@@ -1,0 +1,2501 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+    />
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        margin: 0;
+        background-color: #f9fafc;
+        color: #333;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Top Navbar */
+      .top-navbar {
+        background-color: #1e3a8a;
+        padding: 15px 20px;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .top-navbar img {
+        height: 55px;
+        width: auto;
+        margin-right: 15px;
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 260px;
+        background-color: #f3f4f6;
+        padding: 20px;
+        color: #1e3a8a;
+        height: calc(100vh - 70px);
+        position: fixed;
+        top: 70px;
+        left: 0;
+        overflow-y: auto;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+        z-index: 9;
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #1e3a8a;
+        padding: 14px;
+        margin-bottom: 8px;
+        background-color: #e0e7ff;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background-color 0.3s ease;
+        cursor: pointer;
+      }
+
+      .sidebar a:hover {
+        background-color: #d1d5db;
+      }
+
+      /* Content */
+      .container {
+        margin-left: 280px;
+        margin-top: 90px;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+
+      /* Card Style */
+      .card {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        color: #1e3a8a;
+        font-size: 24px;
+        margin-bottom: 12px;
+      }
+
+      h2 {
+        color: #333;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 10px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      th {
+        background-color: #e0e7ff;
+        color: #1e3a8a;
+        font-weight: bold;
+      }
+
+      .pending {
+        color: #f59e0b;
+        font-weight: bold;
+      }
+
+      .solved {
+        color: #10b981;
+        font-weight: bold;
+      }
+
+      .granted {
+        color: #10b981;
+        font-weight: bold;
+      }
+
+      .revoked {
+        color: #ef4444;
+        font-weight: bold;
+      }
+
+      .btn {
+        background-color: #1e3a8a;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: "Poppins", sans-serif;
+        font-weight: 500;
+        margin-top: 12px;
+      }
+
+      .btn:hover {
+        background-color: #1e40af;
+      }
+
+      .btn-secondary {
+        background-color: #e5e7eb;
+        color: #1e3a8a;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-left: 10px;
+      }
+
+      .btn-secondary:hover {
+        background-color: #d1d5db;
+      }
+
+      .stats-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      .stat-card {
+        background-color: #e0e7ff;
+        padding: 20px;
+        border-radius: 10px;
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+
+      .form-action {
+        margin-top: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .table-responsive {
+        overflow-x: auto;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .summary-box {
+        margin-top: 20px;
+        background-color: #e0f2fe;
+        padding: 15px;
+        border-radius: 8px;
+      }
+
+      .download-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      /* Profile styles */
+      .profile-section {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      input[type="text"],
+      input[type="tel"],
+      input[type="number"],
+      textarea,
+      select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+
+      textarea {
+        height: 80px;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+
+      .col {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .buttons {
+        margin-top: 20px;
+        text-align: right;
+      }
+
+      /* Profile card for dashboard */
+      .profile-card {
+        background-color: #f0f4ff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 20px;
+      }
+
+      .profile-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+
+      .profile-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background-color: #1e3a8a;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 28px;
+        font-weight: bold;
+        margin-right: 15px;
+      }
+
+      .profile-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .profile-detail {
+        flex: 1;
+        min-width: 200px;
+        background-color: white;
+        padding: 12px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(30, 58, 138, 0.1);
+      }
+
+      .profile-detail h4 {
+        margin: 0 0 5px 0;
+        color: #1e3a8a;
+        font-size: 14px;
+      }
+
+      .profile-detail p {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .edit-profile-btn {
+        display: inline-flex;
+        align-items: center;
+        background-color: transparent;
+        color: #1e3a8a;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      /* QR Scanner styles */
+      .qr-scanner-container {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .scanner-header {
+        color: white;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #scanner-preview {
+        width: 300px;
+        height: 300px;
+        border: 3px solid #1e3a8a;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .scanner-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .scanner-btn {
+        background-color: #1e3a8a;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: "Poppins", sans-serif;
+        font-weight: 500;
+      }
+
+      .scanner-btn.cancel {
+        background-color: #dc2626;
+      }
+
+      .scanner-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .scanner-target {
+        width: 200px;
+        height: 200px;
+        border: 2px solid #1e3a8a;
+        border-radius: 8px;
+        position: relative;
+      }
+
+      .scanner-target::before,
+      .scanner-target::after {
+        content: "";
+        position: absolute;
+        background-color: #1e3a8a;
+      }
+
+      .scanner-target::before {
+        width: 100%;
+        height: 2px;
+        top: 50%;
+        left: 0;
+        transform: translateY(-50%);
+      }
+
+      .scanner-target::after {
+        width: 2px;
+        height: 100%;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .or-divider {
+        display: flex;
+        align-items: center;
+        margin: 20px 0;
+      }
+
+      .or-divider::before,
+      .or-divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .or-divider-text {
+        padding: 0 10px;
+        color: #6b7280;
+        font-weight: 500;
+      }
+
+      .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Loading spinner */
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: #1e3a8a;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Error message */
+      .error-message {
+        color: #ef4444;
+        background-color: #fee2e2;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+        text-align: center;
+      }
+
+      /* Success message */
+      .success-message {
+        color: #10b981;
+        background-color: #d1fae5;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+        text-align: center;
+      }
+
+      /* Notification styles */
+      .notification-item {
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #f8fafc;
+        border-left: 4px solid #1e3a8a;
+        border-radius: 4px;
+      }
+
+      .notification-date {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 5px;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 1024px) {
+        .stat-card {
+          min-width: 150px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .sidebar {
+          transform: translateX(-100%);
+          position: fixed;
+          width: 240px;
+          height: 100%;
+        }
+
+        .sidebar.open {
+          transform: translateX(0);
+        }
+
+        .container {
+          margin-left: 0;
+          width: 100%;
+          padding: 16px;
+        }
+
+        .menu-toggle {
+          display: block;
+          position: relative;
+          background-color: transparent;
+          color: white;
+          padding: 8px 12px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 18px;
+        }
+
+        .top-navbar {
+          padding: 15px 10px;
+        }
+
+        h1 {
+          font-size: 22px;
+        }
+
+        .stats-container {
+          flex-direction: column;
+          gap: 15px;
+        }
+
+        .stat-card {
+          width: 100%;
+        }
+
+        .btn,
+        .btn-secondary {
+          width: 100%;
+          margin-top: 10px;
+          margin-left: 0;
+        }
+
+        .form-action {
+          flex-direction: column;
+        }
+
+        .row {
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .profile-info {
+          flex-direction: column;
+        }
+
+        .profile-detail {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .top-navbar span {
+          font-size: 16px;
+        }
+
+        th,
+        td {
+          padding: 8px;
+          font-size: 14px;
+        }
+
+        .container {
+          padding: 12px;
+          margin-top: 70px;
+        }
+
+        .card {
+          padding: 15px;
+        }
+
+        #scanner-preview {
+          width: 250px;
+          height: 250px;
+        }
+      }
+
+      @media (min-width: 769px) {
+        .menu-toggle {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="top-navbar">
+      <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+      <img src="logo albi.png" alt="Logo" class="logoimg" />
+      <span>Hostel Dashboard</span>
+      <button class="btn-secondary" onclick="logout()" style="margin: 0">
+        Logout
+      </button>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+      <a onclick="loadContent('dashboard')">🏠 Dashboard</a>
+      <a onclick="loadContent('leave')">📝 Leave Pass</a>
+      <a onclick="loadContent('complaints')">📢 Complaints</a>
+      <a onclick="loadContent('attendance')">📅 Attendance</a>
+      <a onclick="loadContent('profile')">👤 Profile</a>
+    </div>
+
+    <div class="container" id="content"></div>
+
+    <!-- QR Scanner Container -->
+    <div class="qr-scanner-container" id="qrScannerContainer">
+      <div class="scanner-header">
+        <h2 style="color: white; margin-bottom: 5px">Scan QR Code</h2>
+        <p style="color: #e0e7ff; margin-top: 0">
+          Align the QR code within the frame
+        </p>
+      </div>
+      <div id="scanner-preview">
+        <video id="scanner-video" style="width: 100%; height: 100%"></video>
+        <div class="scanner-overlay">
+          <div class="scanner-target"></div>
+        </div>
+      </div>
+      <div class="scanner-actions">
+        <button class="scanner-btn cancel" onclick="closeQrScanner()">
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Initialize Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyD4BvknExGN8_aWhuw7lT846Lk0gHGNMMg",
+        authDomain: "albergue-1985.firebaseapp.com",
+        projectId: "albergue-1985",
+        storageBucket: "albergue-1985.appspot.com",
+        messagingSenderId: "957761019612",
+        appId: "1:957761019612:web:f879fffb4999d3beb9de19",
+      };
+
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      const db = firebase.firestore();
+      const auth = firebase.auth();
+
+      // Profile data object
+      let profileData = {
+        name: "",
+        regNumber: "",
+        phone: "",
+        address: "",
+        fathersName: "",
+        fathersPhone: "",
+        mothersName: "",
+        mothersPhone: "",
+        course: "",
+        semester: "",
+        yearOfJoining: "",
+      };
+
+      // Current month's attendance data
+      let currentMonthAttendance = [];
+      let complaintsListener = null;
+      let attendanceListener = null;
+      let leavePassListener = null;
+      let notificationsListener = null;
+      let dashboardStats = {
+        pendingComplaints: 0,
+        leaveRequests: 0,
+        attendanceRate: 0,
+      };
+
+      // Load profile data from Firestore
+      async function loadProfileData() {
+        try {
+          const user = auth.currentUser;
+          if (!user) {
+            console.error("No user logged in");
+            return;
+          }
+
+          const doc = await db.collection("students").doc(user.uid).get();
+          if (doc.exists) {
+            const data = doc.data();
+            profileData = {
+              name: data.name || "",
+              regNumber: data.regNumber || "",
+              phone: data.phone || "",
+              address: data.address || "",
+              fathersName: data.fathersName || "",
+              fathersPhone: data.fathersPhone || "",
+              mothersName: data.mothersName || "",
+              mothersPhone: data.mothersPhone || "",
+              course: data.course || "",
+              semester: data.semester || "",
+              yearOfJoining: data.yearOfJoining || "",
+            };
+
+            console.log("Profile loaded:", profileData);
+            document.dispatchEvent(new Event("profileLoaded"));
+          } else {
+            console.log("No profile data found");
+          }
+        } catch (error) {
+          console.error("Error loading profile data:", error);
+          throw error;
+        }
+      }
+
+      // Load dashboard statistics
+      async function loadDashboardStats() {
+        try {
+          if (!profileData.regNumber) {
+            await loadProfileData();
+            if (!profileData.regNumber) {
+              throw new Error("Registration number missing");
+            }
+          }
+
+          // Get pending complaints count
+          const complaintsQuery = await db
+            .collection("complaints")
+            .where("studentId", "==", profileData.regNumber)
+            .where("status", "==", "Pending")
+            .get();
+
+          dashboardStats.pendingComplaints = complaintsQuery.size;
+
+          // Get pending leave requests count
+          const leavePassQuery = await db
+            .collection("leavePasses")
+            .where("studentId", "==", profileData.regNumber)
+            .where("status", "in", ["Pending", "Approved"])
+            .get();
+
+          dashboardStats.leaveRequests = leavePassQuery.size;
+
+          // Get attendance rate
+          const now = new Date();
+          const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+          const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+          const attendanceQuery = await db
+            .collection("attendance")
+            .where("studentId", "==", profileData.regNumber)
+            .where("date", ">=", firstDay)
+            .where("date", "<=", lastDay)
+            .get();
+
+          let presentCount = 0;
+          let totalDays = attendanceQuery.size;
+
+          attendanceQuery.forEach((doc) => {
+            const data = doc.data();
+            if (
+              data.morningStatus === "Present" &&
+              data.eveningStatus === "Present"
+            ) {
+              presentCount++;
+            }
+          });
+
+          dashboardStats.attendanceRate =
+            totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
+
+          // Update the dashboard UI
+          updateDashboardStats();
+        } catch (error) {
+          console.error("Error loading dashboard stats:", error);
+        }
+      }
+
+      // Update dashboard statistics UI
+      function updateDashboardStats() {
+        const pendingEl = document.getElementById("pending-complaints-count");
+        const leaveEl = document.getElementById("leave-requests-count");
+        const attendanceEl = document.getElementById("attendance-rate-count");
+
+        if (pendingEl) pendingEl.textContent = dashboardStats.pendingComplaints;
+        if (leaveEl) leaveEl.textContent = dashboardStats.leaveRequests;
+        if (attendanceEl)
+          attendanceEl.textContent = `${dashboardStats.attendanceRate}%`;
+      }
+
+      // Load complaints from Firestore
+      async function loadComplaints() {
+        try {
+          if (!profileData.regNumber) {
+            await loadProfileData();
+            if (!profileData.regNumber) {
+              throw new Error("Registration number missing");
+            }
+          }
+
+          console.log("Loading complaints for:", profileData.regNumber);
+          const querySnapshot = await db
+            .collection("complaints")
+            .where("studentId", "==", profileData.regNumber)
+            .orderBy("date", "desc")
+            .get();
+
+          return querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              category: data.category || "General",
+              description: data.description || "",
+              status: data.status || "Pending",
+              formattedDate: data.date?.toDate().toLocaleDateString() || "N/A",
+            };
+          });
+        } catch (error) {
+          console.error("Load complaints error:", error);
+          throw error;
+        }
+      }
+
+      // Set up real-time listener for complaints
+      function setupComplaintsListener() {
+        if (!profileData.regNumber) {
+          console.error("No registration number for listener");
+          return;
+        }
+
+        // Remove existing listener if any
+        if (complaintsListener) {
+          complaintsListener();
+        }
+
+        complaintsListener = db
+          .collection("complaints")
+          .where("studentId", "==", profileData.regNumber)
+          .orderBy("date", "desc")
+          .onSnapshot(
+            (snapshot) => {
+              const updatedComplaints = snapshot.docs.map((doc) => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  category: data.category || "General",
+                  description: data.description || "",
+                  status: data.status || "Pending",
+                  formattedDate:
+                    data.date?.toDate().toLocaleDateString() || "N/A",
+                };
+              });
+              updateComplaintsTable(updatedComplaints);
+            },
+            (error) => {
+              console.error("Listener error:", error);
+              showComplaintsError(error);
+            }
+          );
+      }
+
+      // Update complaints table with data
+      function updateComplaintsTable(complaints) {
+        const tableBody = document.querySelector("#complaintsTable tbody");
+        if (!tableBody) return;
+
+        if (complaints.length === 0) {
+          tableBody.innerHTML =
+            '<tr><td colspan="4">No complaints found</td></tr>';
+          return;
+        }
+
+        tableBody.innerHTML = complaints
+          .map(
+            (complaint) => `
+                <tr>
+                    <td>${complaint.formattedDate}</td>
+                    <td>${complaint.category}</td>
+                    <td>${complaint.description}</td>
+                    <td class="${complaint.status.toLowerCase()}">${
+              complaint.status
+            }</td>
+                </tr>
+            `
+          )
+          .join("");
+      }
+
+      // Show error in complaints table
+      function showComplaintsError(error) {
+        const tableBody = document.querySelector("#complaintsTable tbody");
+        if (tableBody) {
+          tableBody.innerHTML = `<tr><td colspan="4" style="color:red">Error loading complaints: ${error.message}</td></tr>`;
+        }
+      }
+
+      // Render complaints table
+      async function renderComplaints() {
+        const tableBody = document.querySelector("#complaintsTable tbody");
+        if (!tableBody) return;
+
+        try {
+          tableBody.innerHTML =
+            '<tr><td colspan="4">Loading complaints...</td>';
+
+          if (!profileData.regNumber) {
+            await loadProfileData();
+          }
+
+          const complaints = await loadComplaints();
+          updateComplaintsTable(complaints);
+          setupComplaintsListener();
+        } catch (error) {
+          console.error("Render complaints error:", error);
+          showComplaintsError(error);
+        }
+      }
+
+      // Submit new complaint
+      async function submitComplaint() {
+        try {
+          const category = document.getElementById("category").value;
+          const description = document.getElementById("complaintDesc").value;
+
+          if (!category || !description) {
+            throw new Error("Please fill all fields");
+          }
+
+          if (!profileData.regNumber) {
+            await loadProfileData();
+            if (!profileData.regNumber) {
+              throw new Error("Profile information not available");
+            }
+          }
+
+          // Show loading state
+          const submitBtn = document.querySelector(
+            '#newComplaintForm button[type="button"]'
+          );
+          const originalText = submitBtn.textContent;
+          submitBtn.innerHTML =
+            '<div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>';
+
+          await db.collection("complaints").add({
+            studentId: profileData.regNumber,
+            studentName: profileData.name,
+            category: category,
+            description: description,
+            date: firebase.firestore.FieldValue.serverTimestamp(),
+            status: "Pending",
+          });
+
+          // Reset button state
+          submitBtn.textContent = originalText;
+
+          // Show success message
+          const successEl = document.createElement("div");
+          successEl.className = "success-message";
+          successEl.textContent = "Complaint submitted successfully!";
+          document
+            .getElementById("complaintForm")
+            .insertBefore(
+              successEl,
+              document.querySelector("#complaintForm form")
+            );
+
+          setTimeout(() => {
+            hideComplaintForm();
+          }, 2000);
+        } catch (error) {
+          console.error("Submit complaint error:", error);
+
+          // Show error message
+          const errorEl = document.createElement("div");
+          errorEl.className = "error-message";
+          errorEl.textContent = error.message;
+          document
+            .getElementById("complaintForm")
+            .insertBefore(
+              errorEl,
+              document.querySelector("#complaintForm form")
+            );
+
+          // Reset button state
+          const submitBtn = document.querySelector(
+            '#newComplaintForm button[type="button"]'
+          );
+          if (submitBtn) submitBtn.textContent = "Submit Complaint";
+        }
+      }
+
+      // Load leave passes from Firestore
+      async function loadLeavePasses() {
+        try {
+          if (!profileData.regNumber) {
+            await loadProfileData();
+            if (!profileData.regNumber) {
+              throw new Error("Registration number missing");
+            }
+          }
+
+          console.log("Loading leave passes for:", profileData.regNumber);
+          const querySnapshot = await db
+            .collection("leavePasses")
+            .where("studentId", "==", profileData.regNumber)
+            .orderBy("fromDate", "desc")
+            .get();
+
+          return querySnapshot.docs.map((doc) => {
+            const data = doc.data();
+            const fromDate = data.fromDate?.toDate();
+            const toDate = data.toDate?.toDate();
+            const requestDate = data.requestDate?.toDate();
+
+            return {
+              id: doc.id,
+              fromDate: fromDate ? fromDate.toLocaleDateString() : "N/A",
+              toDate: toDate ? toDate.toLocaleDateString() : "N/A",
+              reason: data.reason || "",
+              status: data.status || "Pending",
+              requestDate: requestDate
+                ? requestDate.toLocaleDateString()
+                : "N/A",
+            };
+          });
+        } catch (error) {
+          console.error("Load leave passes error:", error);
+          throw error;
+        }
+      }
+
+      // Check for overlapping leave requests
+      async function checkOverlappingLeave(fromDate, toDate) {
+        try {
+          if (!profileData.regNumber) {
+            await loadProfileData();
+            if (!profileData.regNumber) {
+              throw new Error("Registration number missing");
+            }
+          }
+
+          const fromDateObj = new Date(fromDate);
+          const toDateObj = new Date(toDate);
+
+          // Query for any leave passes that overlap with the requested dates
+          const querySnapshot = await db
+            .collection("leavePasses")
+            .where("studentId", "==", profileData.regNumber)
+            .where("status", "in", ["Pending", "Approved"])
+            .get();
+
+          for (const doc of querySnapshot.docs) {
+            const data = doc.data();
+            const existingFrom = data.fromDate.toDate();
+            const existingTo = data.toDate.toDate();
+
+            // Check if the new dates overlap with existing leave
+            if (
+              (fromDateObj >= existingFrom && fromDateObj <= existingTo) ||
+              (toDateObj >= existingFrom && toDateObj <= existingTo) ||
+              (fromDateObj <= existingFrom && toDateObj >= existingTo)
+            ) {
+              return {
+                overlapping: true,
+                existingFrom: existingFrom.toLocaleDateString(),
+                existingTo: existingTo.toLocaleDateString(),
+              };
+            }
+          }
+
+          return { overlapping: false };
+        } catch (error) {
+          console.error("Error checking overlapping leave:", error);
+          throw error;
+        }
+      }
+
+      // Set up real-time listener for leave passes
+      function setupLeavePassListener() {
+        if (!profileData.regNumber) {
+          console.error("No registration number for listener");
+          return;
+        }
+
+        // Remove existing listener if any
+        if (leavePassListener) {
+          leavePassListener();
+        }
+
+        leavePassListener = db
+          .collection("leavePasses")
+          .where("studentId", "==", profileData.regNumber)
+          .orderBy("fromDate", "desc")
+          .onSnapshot(
+            (snapshot) => {
+              const updatedLeavePasses = snapshot.docs.map((doc) => {
+                const data = doc.data();
+                const fromDate = data.fromDate?.toDate();
+                const toDate = data.toDate?.toDate();
+                const requestDate = data.requestDate?.toDate();
+
+                return {
+                  id: doc.id,
+                  fromDate: fromDate ? fromDate.toLocaleDateString() : "N/A",
+                  toDate: toDate ? toDate.toLocaleDateString() : "N/A",
+                  reason: data.reason || "",
+                  status: data.status || "Pending",
+                  requestDate: requestDate
+                    ? requestDate.toLocaleDateString()
+                    : "N/A",
+                };
+              });
+              updateLeavePassTable(updatedLeavePasses);
+            },
+            (error) => {
+              console.error("Leave pass listener error:", error);
+              showLeavePassError(error);
+            }
+          );
+      }
+
+      // Update leave pass table with data
+      function updateLeavePassTable(leavePasses) {
+        const tableBody = document.querySelector("#leavePassTable tbody");
+        if (!tableBody) return;
+
+        if (leavePasses.length === 0) {
+          tableBody.innerHTML =
+            '<tr><td colspan="6">No leave passes found</td></tr>';
+          return;
+        }
+
+        tableBody.innerHTML = leavePasses
+          .map(
+            (pass) => `
+                <tr>
+                    <td>${pass.requestDate}</td>
+                    <td>${pass.fromDate}</td>
+                    <td>${pass.toDate}</td>
+                    <td>${pass.reason}</td>
+                    <td class="${pass.status.toLowerCase()}">${pass.status}</td>
+                    <td><a href="#" onclick="viewLeavePass('${
+                      pass.id
+                    }')" style="color: #1e3a8a;">View</a></td>
+                </tr>
+            `
+          )
+          .join("");
+      }
+
+      // Show error in leave pass table
+      function showLeavePassError(error) {
+        const tableBody = document.querySelector("#leavePassTable tbody");
+        if (tableBody) {
+          tableBody.innerHTML = `<tr><td colspan="6" style="color:red">Error loading leave passes: ${error.message}</td></tr>`;
+        }
+      }
+
+      // View leave pass details
+      async function viewLeavePass(passId) {
+        try {
+          const doc = await db.collection("leavePasses").doc(passId).get();
+          if (doc.exists) {
+            const data = doc.data();
+            const fromDate = data.fromDate?.toDate();
+            const toDate = data.toDate?.toDate();
+            const requestDate = data.requestDate?.toDate();
+
+            alert(
+              `Leave Pass Details:\n\n` +
+                `Request Date: ${
+                  requestDate ? requestDate.toLocaleDateString() : "N/A"
+                }\n` +
+                `From: ${fromDate ? fromDate.toLocaleDateString() : "N/A"}\n` +
+                `To: ${toDate ? toDate.toLocaleDateString() : "N/A"}\n` +
+                `Reason: ${data.reason || "N/A"}\n` +
+                `Status: ${data.status || "Pending"}\n` +
+                `Approved By: ${data.approvedBy || "N/A"}\n` +
+                `Remarks: ${data.remarks || "N/A"}`
+            );
+          } else {
+            alert("Leave pass not found");
+          }
+        } catch (error) {
+          console.error("Error viewing leave pass:", error);
+          alert("Error loading leave pass details");
+        }
+      }
+
+      // Render leave passes table
+      async function renderLeavePasses() {
+        const tableBody = document.querySelector("#leavePassTable tbody");
+        if (!tableBody) return;
+
+        try {
+          tableBody.innerHTML =
+            '<tr><td colspan="6">Loading leave passes...</td>';
+
+          if (!profileData.regNumber) {
+            await loadProfileData();
+          }
+
+          const leavePasses = await loadLeavePasses();
+          updateLeavePassTable(leavePasses);
+          setupLeavePassListener();
+        } catch (error) {
+          console.error("Render leave passes error:", error);
+          showLeavePassError(error);
+        }
+      }
+
+      // Submit new leave request
+      async function submitLeaveRequest() {
+        try {
+          const fromDate = document.getElementById("fromDate").value;
+          const toDate = document.getElementById("toDate").value;
+          const reason = document.getElementById("reason").value;
+
+          if (!fromDate || !toDate || !reason) {
+            throw new Error("Please fill all fields");
+          }
+
+          // Validate dates
+          const fromDateObj = new Date(fromDate);
+          const toDateObj = new Date(toDate);
+
+          if (fromDateObj > toDateObj) {
+            throw new Error("End date must be after start date");
+          }
+
+          // Check if dates are in the future
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          if (fromDateObj < today) {
+            throw new Error("Start date must be today or in the future");
+          }
+
+          // Check maximum duration (e.g., 7 days)
+          const durationDays =
+            (toDateObj - fromDateObj) / (1000 * 60 * 60 * 24) + 1;
+          if (durationDays > 7) {
+            throw new Error("Maximum leave duration is 7 days");
+          }
+
+          if (!profileData.regNumber) {
+            await loadProfileData();
+            if (!profileData.regNumber) {
+              throw new Error("Profile information not available");
+            }
+          }
+
+          // Check for overlapping leave requests
+          const overlapCheck = await checkOverlappingLeave(fromDate, toDate);
+          if (overlapCheck.overlapping) {
+            throw new Error(
+              `You already have a leave request from ${overlapCheck.existingFrom} to ${overlapCheck.existingTo}`
+            );
+          }
+
+          // Show loading state
+          const submitBtn = document.querySelector(
+            '#newLeaveForm button[type="button"]'
+          );
+          const originalText = submitBtn.textContent;
+          submitBtn.innerHTML =
+            '<div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>';
+
+          await db.collection("leavePasses").add({
+            studentId: profileData.regNumber,
+            studentName: profileData.name,
+            fromDate: firebase.firestore.Timestamp.fromDate(fromDateObj),
+            toDate: firebase.firestore.Timestamp.fromDate(toDateObj),
+            reason: reason,
+            requestDate: firebase.firestore.FieldValue.serverTimestamp(),
+            status: "Pending",
+          });
+
+          // Reset button state
+          submitBtn.textContent = originalText;
+
+          // Show success message
+          const successEl = document.createElement("div");
+          successEl.className = "success-message";
+          successEl.textContent = "Leave request submitted successfully!";
+          document
+            .getElementById("leaveForm")
+            .insertBefore(successEl, document.querySelector("#leaveForm form"));
+
+          setTimeout(() => {
+            hideLeaveForm();
+          }, 2000);
+        } catch (error) {
+          console.error("Submit leave request error:", error);
+
+          // Show error message
+          const errorEl = document.createElement("div");
+          errorEl.className = "error-message";
+          errorEl.textContent = error.message;
+          document
+            .getElementById("leaveForm")
+            .insertBefore(errorEl, document.querySelector("#leaveForm form"));
+
+          // Reset button state
+          const submitBtn = document.querySelector(
+            '#newLeaveForm button[type="button"]'
+          );
+          if (submitBtn) submitBtn.textContent = "Submit Request";
+        }
+      }
+
+      // Improved loadStudentAttendance function
+      async function loadStudentAttendance(month = null) {
+        try {
+          console.log("Starting attendance load for month:", month);
+
+          // Ensure profile data is loaded
+          if (!profileData.regNumber) {
+            await loadProfileData();
+            if (!profileData.regNumber) {
+              throw new Error("Registration number not available");
+            }
+          }
+
+          // Get the month to query
+          const now = new Date();
+          let year = now.getFullYear();
+          let monthIndex = now.getMonth();
+
+          if (month) {
+            const monthMap = {
+              january: 0,
+              february: 1,
+              march: 2,
+              april: 3,
+              may: 4,
+              june: 5,
+              july: 6,
+              august: 7,
+              september: 8,
+              october: 9,
+              november: 10,
+              december: 11,
+            };
+
+            monthIndex = monthMap[month.toLowerCase()] || now.getMonth();
+
+            // Adjust year if we're looking at months from previous year
+            if (monthIndex > now.getMonth()) {
+              year--;
+            }
+          }
+
+          // Create proper Firestore Timestamps for the date range
+          const firstDay = new Date(year, monthIndex, 1);
+          const lastDay = new Date(year, monthIndex + 1, 0);
+
+          console.log("Fetching attendance for:", profileData.regNumber);
+          console.log("Date range:", firstDay, "to", lastDay);
+
+          // Convert to Firestore Timestamps
+          const firstDayTimestamp =
+            firebase.firestore.Timestamp.fromDate(firstDay);
+          const lastDayTimestamp =
+            firebase.firestore.Timestamp.fromDate(lastDay);
+
+          // Update month name display
+          const monthNames = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+          ];
+          document.getElementById("month-name").textContent =
+            monthNames[monthIndex];
+
+          // Show loading state
+          const tableBody = document.querySelector("#attendanceTable tbody");
+          if (tableBody) {
+            tableBody.innerHTML =
+              '<tr><td colspan="4" style="text-align: center;">Loading attendance data...</td></tr>';
+          }
+
+          const querySnapshot = await db
+            .collection("attendance")
+            .where("studentId", "==", profileData.regNumber)
+            .where("date", ">=", firstDayTimestamp)
+            .where("date", "<=", lastDayTimestamp)
+            .orderBy("date", "desc")
+            .get();
+
+          console.log("Found records:", querySnapshot.size);
+
+          const attendanceRecords = [];
+
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const date = data.date.toDate();
+            const formattedDate = date.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+
+            attendanceRecords.push({
+              date: formattedDate,
+              morningStatus: data.morningStatus || "Not recorded",
+              eveningStatus: data.eveningStatus || "Not recorded",
+              remarks: data.remarks || "-",
+            });
+          });
+
+          // Update attendance table
+          updateAttendanceTable(attendanceRecords);
+
+          // Update summary stats
+          updateSummaryStats(attendanceRecords);
+
+          // Set up real-time listener
+          setupAttendanceListener(monthIndex, year);
+        } catch (error) {
+          console.error("Error loading attendance:", error);
+          const tableBody = document.querySelector("#attendanceTable tbody");
+          if (tableBody) {
+            tableBody.innerHTML =
+              '<tr><td colspan="4" style="text-align: center; color: red;">Error loading attendance: ' +
+              error.message +
+              "</td></tr>";
+          }
+        }
+      }
+
+      // Improved setupAttendanceListener function
+      function setupAttendanceListener(monthIndex, year) {
+        const user = auth.currentUser;
+        if (!user || !profileData.regNumber) {
+          console.error(
+            "Cannot setup listener - no user or registration number"
+          );
+          return;
+        }
+
+        const firstDay = new Date(year, monthIndex, 1);
+        const lastDay = new Date(year, monthIndex + 1, 0);
+
+        // Convert to Firestore Timestamps
+        const firstDayTimestamp =
+          firebase.firestore.Timestamp.fromDate(firstDay);
+        const lastDayTimestamp = firebase.firestore.Timestamp.fromDate(lastDay);
+
+        console.log(
+          "Setting up real-time listener for:",
+          firstDay,
+          "to",
+          lastDay
+        );
+
+        // Remove existing listener if any
+        if (attendanceListener) {
+          console.log("Removing previous attendance listener");
+          attendanceListener();
+        }
+
+        attendanceListener = db
+          .collection("attendance")
+          .where("studentId", "==", profileData.regNumber)
+          .where("date", ">=", firstDayTimestamp)
+          .where("date", "<=", lastDayTimestamp)
+          .orderBy("date", "desc")
+          .onSnapshot(
+            (snapshot) => {
+              console.log("Received real-time attendance update");
+              const updatedRecords = [];
+
+              snapshot.forEach((doc) => {
+                const data = doc.data();
+                const date = data.date.toDate();
+                const formattedDate = date.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                });
+
+                updatedRecords.push({
+                  date: formattedDate,
+                  morningStatus: data.morningStatus || "Not recorded",
+                  eveningStatus: data.eveningStatus || "Not recorded",
+                  remarks: data.remarks || "-",
+                });
+              });
+
+              updateAttendanceTable(updatedRecords);
+              updateSummaryStats(updatedRecords);
+            },
+            (error) => {
+              console.error("Error in attendance listener:", error);
+              const tableBody = document.querySelector(
+                "#attendanceTable tbody"
+              );
+              if (tableBody) {
+                tableBody.innerHTML =
+                  '<tr><td colspan="4" style="text-align: center; color: red;">Error in real-time updates: ' +
+                  error.message +
+                  "</td></tr>";
+              }
+            }
+          );
+      }
+
+      // Enhanced updateAttendanceTable function
+      function updateAttendanceTable(records) {
+        const tableBody = document.querySelector("#attendanceTable tbody");
+        if (!tableBody) {
+          console.error("Attendance table body not found");
+          return;
+        }
+
+        if (records.length === 0) {
+          tableBody.innerHTML =
+            '<tr><td colspan="4" style="text-align: center;">No attendance records found for this month</td></tr>';
+          return;
+        }
+
+        tableBody.innerHTML = records
+          .map(
+            (record) => `
+                <tr>
+                    <td>${record.date}</td>
+                    <td style="color: ${getStatusColor(
+                      record.morningStatus
+                    )}">${record.morningStatus}</td>
+                    <td style="color: ${getStatusColor(
+                      record.eveningStatus
+                    )}">${record.eveningStatus}</td>
+                    <td>${record.remarks}</td>
+                </tr>
+            `
+          )
+          .join("");
+      }
+
+      // Enhanced updateSummaryStats function
+      function updateSummaryStats(records) {
+        if (records.length === 0) {
+          document.getElementById("present-days").textContent = "0";
+          document.getElementById("absent-days").textContent = "0";
+          document.getElementById("attendance-rate").textContent = "0%";
+          return;
+        }
+
+        let presentCount = 0;
+        let absentCount = 0;
+        let partialCount = 0;
+        let totalDays = records.length;
+
+        records.forEach((record) => {
+          const morningPresent = record.morningStatus === "Present";
+          const eveningPresent = record.eveningStatus === "Present";
+
+          if (morningPresent && eveningPresent) {
+            presentCount++;
+          } else if (!morningPresent && !eveningPresent) {
+            absentCount++;
+          } else {
+            partialCount++;
+          }
+        });
+
+        // Calculate attendance rate (count partial days as half)
+        const attendanceRate = Math.round(
+          ((presentCount + partialCount * 0.5) / totalDays) * 100
+        );
+
+        document.getElementById("present-days").textContent = presentCount;
+        document.getElementById("absent-days").textContent = absentCount;
+        document.getElementById(
+          "attendance-rate"
+        ).textContent = `${attendanceRate}%`;
+
+        console.log(
+          `Attendance stats: ${presentCount} full present, ${partialCount} partial, ${absentCount} absent`
+        );
+      }
+
+      // Enhanced getStatusColor function
+      function getStatusColor(status) {
+        if (status === "Present") return "#10b981"; // green
+        if (status === "Absent") return "#ef4444"; // red
+        if (status === "Late") return "#f59e0b"; // amber
+        if (status === "Excused") return "#3b82f6"; // blue
+        return "#6b7280"; // gray
+      }
+
+      // Enhanced downloadAttendance function
+      function downloadAttendance() {
+        try {
+          const month = document.getElementById("month").value;
+          const monthNames = {
+            january: "January",
+            february: "February",
+            march: "March",
+            april: "April",
+            may: "May",
+            june: "June",
+            july: "July",
+            august: "August",
+            september: "September",
+            october: "October",
+            november: "November",
+            december: "December",
+          };
+
+          const monthName = monthNames[month] || monthNames["march"];
+          const year = new Date().getFullYear();
+
+          // Get the attendance data from the table
+          const table = document.getElementById("attendanceTable");
+          const rows = table.querySelectorAll("tbody tr");
+
+          if (
+            rows.length === 0 ||
+            rows[0].cells[0].textContent.includes("No attendance records")
+          ) {
+            alert("No attendance data available to download");
+            return;
+          }
+
+          let csvContent = "data:text/csv;charset=utf-8,";
+          csvContent += "Date,Morning Status,Evening Status,Remarks\n";
+
+          rows.forEach((row) => {
+            const cells = row.querySelectorAll("td");
+            // Skip if this is a message row
+            if (cells.length !== 4) return;
+
+            const date = cells[0].textContent;
+            const morningStatus = cells[1].textContent;
+            const eveningStatus = cells[2].textContent;
+            const remarks = cells[3].textContent.replace(/"/g, '""');
+
+            // Escape commas and quotes in CSV
+            csvContent += `"${date}","${morningStatus}","${eveningStatus}","${remarks}"\n`;
+          });
+
+          // Create download link
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement("a");
+          link.setAttribute("href", encodedUri);
+          link.setAttribute(
+            "download",
+            `Attendance_${profileData.regNumber}_${monthName}_${year}.csv`
+          );
+          document.body.appendChild(link);
+
+          // Trigger download
+          link.click();
+          document.body.removeChild(link);
+        } catch (error) {
+          console.error("Error downloading attendance:", error);
+          alert("Failed to download attendance data. Please try again.");
+        }
+      }
+
+      // QR Scanner functions
+      function openQrScanner() {
+        const scannerContainer = document.getElementById("qrScannerContainer");
+        scannerContainer.style.display = "flex";
+
+        // Access the camera
+        const video = document.getElementById("scanner-video");
+
+        // Check if getUserMedia is supported
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices
+            .getUserMedia({ video: { facingMode: "environment" } })
+            .then(function (stream) {
+              video.srcObject = stream;
+              video.play();
+            })
+            .catch(function (error) {
+              console.error("Camera error:", error);
+              alert("Could not access the camera. " + error.message);
+              closeQrScanner();
+            });
+        } else {
+          alert("Sorry, your browser doesn't support accessing the camera.");
+          closeQrScanner();
+        }
+      }
+
+      function closeQrScanner() {
+        const scannerContainer = document.getElementById("qrScannerContainer");
+        scannerContainer.style.display = "none";
+
+        // Stop the video stream if it exists
+        const video = document.getElementById("scanner-video");
+        if (video.srcObject) {
+          const tracks = video.srcObject.getTracks();
+          tracks.forEach((track) => track.stop());
+          video.srcObject = null;
+        }
+      }
+
+      // For demonstration purposes - this would be called when a valid leave pass QR is scanned
+      function processLeavePassQr(passId) {
+        // In a real app, this would fetch the pass details from the server
+        alert(`Processing leave pass ID: ${passId}`);
+        loadContent("leave");
+      }
+      // Save profile to Firestore
+      async function saveProfile(event) {
+        event.preventDefault();
+
+        try {
+          const user = auth.currentUser;
+          if (!user) {
+            alert("No user logged in");
+            return;
+          }
+
+          // Create updatedProfile object first - this was incorrectly placed after validation
+          const updatedProfile = {
+            name: document.getElementById("name").value,
+            regNumber: document.getElementById("regNumber").value,
+            phone: document.getElementById("phone").value,
+            address: document.getElementById("address").value,
+            fathersName: document.getElementById("fathersName").value,
+            fathersPhone: document.getElementById("fathersPhone").value,
+            mothersName: document.getElementById("mothersName").value,
+            mothersPhone: document.getElementById("mothersPhone").value,
+            course: document.getElementById("course").value,
+            semester: document.getElementById("semester").value,
+            yearOfJoining: document.getElementById("yearOfJoining").value,
+          };
+
+          // Validate names (only letters, spaces, and common name characters)
+          const nameRegex = /^[A-Za-z\s'.,-]{2,50}$/;
+
+          if (!nameRegex.test(updatedProfile.name)) {
+            throw new Error(
+              "Student name must contain 2-50 characters (letters, spaces, apostrophes, hyphens only)"
+            );
+          }
+
+          if (
+            updatedProfile.fathersName &&
+            !nameRegex.test(updatedProfile.fathersName)
+          ) {
+            throw new Error(
+              "Father's name must contain 2-50 characters (letters, spaces, apostrophes, hyphens only)"
+            );
+          }
+
+          if (
+            updatedProfile.mothersName &&
+            !nameRegex.test(updatedProfile.mothersName)
+          ) {
+            throw new Error(
+              "Mother's name must contain 2-50 characters (letters, spaces, apostrophes, hyphens only)"
+            );
+          }
+
+          // Validate phone numbers
+          if (!/^\d{10}$/.test(updatedProfile.phone))
+            throw new Error("Invalid phone number");
+          if (
+            updatedProfile.fathersPhone &&
+            !/^\d{10}$/.test(updatedProfile.fathersPhone)
+          ) {
+            throw new Error("Invalid father's phone number");
+          }
+          if (
+            updatedProfile.mothersPhone &&
+            !/^\d{10}$/.test(updatedProfile.mothersPhone)
+          ) {
+            throw new Error("Invalid mother's phone number");
+          }
+
+          // Show loading state
+          const submitBtn = document.querySelector(
+            '#studentProfileForm button[type="submit"]'
+          );
+          const originalText = submitBtn.textContent;
+          submitBtn.innerHTML =
+            '<div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>';
+
+          // Update Firestore
+          await db
+            .collection("students")
+            .doc(user.uid)
+            .set(updatedProfile, { merge: true });
+
+          // Update local profile data
+          profileData = updatedProfile;
+
+          // Reset button state
+          submitBtn.textContent = originalText;
+
+          // Show success message
+          const successEl = document.createElement("div");
+          successEl.className = "success-message";
+          successEl.textContent = "Profile updated successfully!";
+          document
+            .getElementById("studentProfileForm")
+            .insertBefore(
+              successEl,
+              document.querySelector("#studentProfileForm .buttons")
+            );
+
+          // Redirect to dashboard after a delay
+          setTimeout(() => {
+            loadContent("dashboard");
+          }, 2000);
+        } catch (error) {
+          console.error("Error saving profile:", error);
+
+          // Show error message
+          const errorEl = document.createElement("div");
+          errorEl.className = "error-message";
+          errorEl.textContent =
+            error.message || "Error updating profile. Please try again.";
+          document
+            .getElementById("studentProfileForm")
+            .insertBefore(
+              errorEl,
+              document.querySelector("#studentProfileForm .buttons")
+            );
+
+          // Reset button state
+          const submitBtn = document.querySelector(
+            '#studentProfileForm button[type="submit"]'
+          );
+          if (submitBtn) submitBtn.textContent = "Save Profile";
+        }
+      } // Fill profile form with existing data
+      function fillProfileForm() {
+        // Only fill form if we're on the profile page
+        if (document.getElementById("name")) {
+          document.getElementById("name").value = profileData.name;
+          document.getElementById("regNumber").value = profileData.regNumber;
+          document.getElementById("phone").value = profileData.phone;
+          document.getElementById("address").value = profileData.address;
+          document.getElementById("fathersName").value =
+            profileData.fathersName;
+          document.getElementById("fathersPhone").value =
+            profileData.fathersPhone;
+          document.getElementById("mothersName").value =
+            profileData.mothersName;
+          document.getElementById("mothersPhone").value =
+            profileData.mothersPhone;
+          document.getElementById("course").value = profileData.course;
+          document.getElementById("semester").value = profileData.semester;
+          document.getElementById("yearOfJoining").value =
+            profileData.yearOfJoining;
+        }
+      }
+
+      // Show/hide complaint form
+      function showNewComplaintForm() {
+        document.getElementById("complaintForm").style.display = "block";
+      }
+
+      function hideComplaintForm() {
+        document.getElementById("complaintForm").style.display = "none";
+        document.getElementById("newComplaintForm").reset();
+
+        // Remove any messages
+        const messages = document.querySelectorAll(
+          "#complaintForm .success-message, #complaintForm .error-message"
+        );
+        messages.forEach((msg) => msg.remove());
+      }
+
+      // Show/hide leave form
+      function showNewLeaveForm() {
+        document.getElementById("leaveForm").style.display = "block";
+
+        // Set default dates (today and tomorrow)
+        const today = new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(today.getDate() + 1);
+
+        document.getElementById("fromDate").valueAsDate = today;
+        document.getElementById("toDate").valueAsDate = tomorrow;
+      }
+
+      function hideLeaveForm() {
+        document.getElementById("leaveForm").style.display = "none";
+        document.getElementById("newLeaveForm").reset();
+
+        // Remove any messages
+        const messages = document.querySelectorAll(
+          "#leaveForm .success-message, #leaveForm .error-message"
+        );
+        messages.forEach((msg) => msg.remove());
+      }
+
+      // Logout function
+      function logout() {
+        auth
+          .signOut()
+          .then(() => {
+            window.location.href = "albi.html";
+          })
+          .catch((error) => {
+            console.error("Logout error:", error);
+            alert("Error logging out. Please try again.");
+          });
+      }
+
+      // Helper function to get initials from name
+      function getInitials(name) {
+        if (!name) return "?";
+        return name
+          .split(" ")
+          .map((word) => word.charAt(0))
+          .join("")
+          .toUpperCase();
+      }
+
+      // Helper function to get formatted semester text
+      function getSemesterText(semester) {
+        return semester ? `Semester ${semester}` : "Not specified";
+      }
+
+      // Toggle mobile menu
+      function toggleMenu() {
+        document.getElementById("sidebar").classList.toggle("open");
+      }
+
+      // Load notifications from Firestore with real-time updates
+      async function loadNotifications() {
+        console.log("Starting to load notifications...");
+        const notificationsContainer = document.getElementById(
+          "notifications-container"
+        );
+
+        // Early exit if container doesn't exist
+        if (!notificationsContainer) {
+          console.error("Notifications container not found in the DOM");
+          return () => {};
+        }
+
+        // Show loading indicator
+        notificationsContainer.innerHTML = '<div class="spinner"></div>';
+
+        try {
+          console.log("Setting up Firebase listener...");
+
+          // First, verify we can access the collection with a simple get
+          const testQuery = await db.collection("alerts").limit(1).get();
+          console.log(`Can access collection: ${!testQuery.empty}`);
+
+          // Set up the real-time listener with proper error handling
+          const unsubscribe = db
+            .collection("alerts")
+            // Try without the complex query first - comment this back in once basic query works
+            .where("target", "in", ["all", "students"])
+            // .orderBy("timestamp", "desc")
+            .limit(5)
+            .onSnapshot(
+              (snapshot) => {
+                console.log(`Got snapshot with ${snapshot.size} documents`);
+
+                if (snapshot.empty) {
+                  console.log("No notifications found in the collection");
+                  notificationsContainer.innerHTML =
+                    "<p>No notifications found</p>";
+                  return;
+                }
+
+                let notificationsHTML = "";
+                snapshot.forEach((doc) => {
+                  console.log(`Processing document: ${doc.id}`);
+                  const data = doc.data();
+                  console.log("Document data:", JSON.stringify(data));
+
+                  // Format date with fallback options
+                  let formattedDate = "Date unavailable";
+                  if (data.timestamp) {
+                    try {
+                      const date =
+                        typeof data.timestamp.toDate === "function"
+                          ? data.timestamp.toDate()
+                          : new Date(data.timestamp);
+
+                      formattedDate = date.toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                    } catch (err) {
+                      console.error("Error formatting date:", err);
+                    }
+                  }
+
+                  // Find message content with fallbacks
+                  const messageContent =
+                    data.message || data.content || data.alert || "No content";
+
+                  // Build notification HTML
+                  notificationsHTML += `
+                            <div class="notification-item">
+                                <div>${messageContent}</div>
+                                <div class="notification-date">${formattedDate}</div>
+                            </div>
+                        `;
+                });
+
+                console.log(
+                  "Updating notifications container with new content"
+                );
+                notificationsContainer.innerHTML = notificationsHTML;
+              },
+              (error) => {
+                console.error("Error in onSnapshot listener:", error);
+                notificationsContainer.innerHTML = `
+                        <div class="error-message">
+                            Error loading notifications: ${error.message}
+                            ${
+                              error.code === "resource-exhausted"
+                                ? "<br>You may need to create a composite index for this query."
+                                : ""
+                            }
+                        </div>
+                    `;
+              }
+            );
+
+          console.log("Notification listener set up successfully");
+          return unsubscribe;
+        } catch (error) {
+          console.error("Fatal error in loadNotifications:", error);
+          notificationsContainer.innerHTML = `
+            <div class="error-message">
+                Error: ${error.message}
+            </div>
+        `;
+          return () => {};
+        }
+      }
+
+      // Add event listener to ensure DOM is loaded before running
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM loaded, initializing notifications...");
+        loadNotifications().catch((err) =>
+          console.error("Failed to load notifications:", err)
+        );
+      });
+
+      // Optionally, expose a function to manually refresh notifications
+      function refreshNotifications() {
+        console.log("Manually refreshing notifications...");
+        return loadNotifications();
+      } // Load content based on page
+
+
+      function loadContent(page) {
+        const content = document.getElementById("content");
+
+        // Close mobile menu after selection
+        if (window.innerWidth <= 768) {
+          document.getElementById("sidebar").classList.remove("open");
+        }
+
+        // Dispatch event when content changes
+        document.dispatchEvent(new Event("contentChanged"));
+
+        if (page === "dashboard") {
+          content.innerHTML = `
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar">${getInitials(
+                          profileData.name
+                        )}</div>
+                        <div>
+                            <h1 style="margin: 0;">${profileData.name}</h1>
+                            <p style="margin: 0;">${profileData.regNumber}</p>
+                            <button class="edit-profile-btn" onclick="loadContent('profile')">✏️ Edit Profile</button>
+                        </div>
+                    </div>
+                    <div class="profile-info">
+                        <div class="profile-detail">
+                            <h4>Course</h4>
+                            <p>${profileData.course}</p>
+                        </div>
+                        <div class="profile-detail">
+                            <h4>Semester</h4>
+                            <p>${getSemesterText(profileData.semester)}</p>
+                        </div>
+                        <div class="profile-detail">
+                            <h4>Phone</h4>
+                            <p>${profileData.phone}</p>
+                        </div>
+                        <div class="profile-detail">
+                            <h4>Parent Contact</h4>
+                            <p>${profileData.fathersName}: ${
+            profileData.fathersPhone
+          }</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h1>Dashboard</h1>
+                    <p>Welcome to the Hostel Management System. Use the sidebar to navigate to different features.</p>
+                    <div class="stats-container">
+                        <div class="stat-card" style="background-color: #e0e7ff;">
+                            <h3 style="margin-top: 0; color: #1e3a8a;">Pending Complaints</h3>
+                            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;" id="pending-complaints-count">Loading...</p>
+                        </div>
+                        <div class="stat-card" style="background-color: #e0f2fe;">
+                            <h3 style="margin-top: 0; color: #1e3a8a;">Leave Requests</h3>
+                            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;" id="leave-requests-count">Loading...</p>
+                        </div>
+                        <div class="stat-card" style="background-color: #dcfce7;">
+                            <h3 style="margin-top: 0; color: #1e3a8a;">Attendance Rate</h3>
+                            <p style="font-size: 24px; font-weight: bold; margin: 10px 0;" id="attendance-rate-count">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h1>Recent Notifications</h1>
+                    <div id="notifications-container">
+                        <div class="spinner"></div>
+                    </div>
+                    <button class="btn" onclick="loadNotifications()" style="margin-top: 10px;">Refresh Notifications</button>
+                </div>`;
+
+          // Load dashboard statistics
+          loadDashboardStats();
+
+          // Load notifications
+          loadNotifications();
+        } else if (page === "leave") {
+          content.innerHTML = `
+                <div class="card">
+                    <h1>Leave Pass Requests</h1>
+                    <div class="table-responsive">
+                        <table id="leavePassTable">
+                            <thead>
+                                <tr>
+                                    <th>Request Date</th>
+                                    <th>From</th>
+                                    <th>To</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" style="text-align: center;">Loading leave passes...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-icon" onclick="openQrScanner()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <rect x="7" y="7" width="3" height="3"></rect>
+                            <rect x="14" y="7" width="3" height="3"></rect>
+                            <rect x="7" y="14" width="3" height="3"></rect>
+                            <rect x="14" y="14" width="3" height="3"></rect>
+                        </svg>
+                        Scan QR Code
+                    </button>
+                    <div class="or-divider">
+                        <span class="or-divider-text">OR</span>
+                    </div>
+                    <button class="btn" onclick="showNewLeaveForm()">Request New Leave</button>
+                </div>
+                <div id="leaveForm" style="display: none;" class="card">
+                    <h1>New Leave Request</h1>
+                    <form id="newLeaveForm">
+                        <div class="form-group">
+                            <label class="form-label" for="fromDate">From Date:</label>
+                            <input type="date" id="fromDate" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="toDate">To Date:</label>
+                            <input type="date" id="toDate" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="reason">Reason:</label>
+                            <textarea id="reason" rows="4" class="form-input" required></textarea>
+                        </div>
+                        <div class="form-action">
+                            <button type="button" class="btn" onclick="submitLeaveRequest()">Submit Request</button>
+                            <button type="button" class="btn-secondary" onclick="hideLeaveForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>`;
+
+          // Render leave passes after the HTML is loaded
+          setTimeout(() => {
+            renderLeavePasses();
+          }, 0);
+        } else if (page === "complaints") {
+          content.innerHTML = `
+                <div class="card">
+                    <h1>Complaints</h1>
+                    <div class="table-responsive">
+                        <table id="complaintsTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4" style="text-align: center;">Loading complaints...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn" onclick="showNewComplaintForm()">Add New Complaint</button>
+                </div>
+                <div id="complaintForm" style="display: none;" class="card">
+                    <h1>New Complaint</h1>
+                    <form id="newComplaintForm">
+                        <div class="form-group">
+                            <label class="form-label" for="category">Category:</label>
+                            <select id="category" class="form-input" required>
+                                <option value="">Select a category</option>
+                                <option value="Network">Network</option>
+                                <option value="Electrical">Electrical</option>
+                                <option value="Plumbing">Plumbing</option>
+                                <option value="Furniture">Furniture</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="complaintDesc">Description:</label>
+                            <textarea id="complaintDesc" rows="4" class="form-input" required placeholder="Describe your complaint in detail..."></textarea>
+                        </div>
+                        <div class="form-action">
+                            <button type="button" class="btn" onclick="submitComplaint()">Submit Complaint</button>
+                            <button type="button" class="btn-secondary" onclick="hideComplaintForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>`;
+
+          // Render complaints after the HTML is loaded
+          setTimeout(() => {
+            renderComplaints();
+          }, 0);
+        } else if (page === "attendance") {
+          content.innerHTML = `
+                <div class="card">
+                    <h1>Attendance Record</h1>
+                    <div class="download-container">
+                        <div>
+                            <label for="month" style="margin-right: 10px;">Select Month:</label>
+                            <select id="month" onchange="loadStudentAttendance(this.value)" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="january">January 2025</option>
+                                <option value="february">February 2025</option>
+                                <option value="march" selected>March 2025</option>
+                                <option value="april">April 2025</option>
+                                <option value="may">May 2025</option>
+                                <option value="june">June 2025</option>
+                                <option value="july">July 2025</option>
+                                <option value="august">August 2025</option>
+                                <option value="september">September 2025</option>
+                                <option value="october">October 2025</option>
+                                <option value="november">November 2025</option>
+                                <option value="december">December 2025</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="downloadAttendance()">Download Attendance</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="attendanceTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Morning</th>
+                                    <th>Evening</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4" style="text-align: center;">Loading attendance...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="summary-box">
+                        <p style="margin: 0;"><strong>Attendance Summary (<span id="month-name">March</span> 2025):</strong></p>
+                        <p style="margin: 10px 0 0 0;">Present: <span id="present-days">0</span> days | Absent: <span id="absent-days">0</span> day | Attendance Rate: <span id="attendance-rate">0%</span></p>
+                    </div>
+                </div>`;
+
+          // Load attendance data when page loads
+          loadStudentAttendance("march");
+        } else if (page === "profile") {
+          content.innerHTML = `
+                <div class="card profile-section">
+                    <h1>Student Profile</h1>
+                    <form id="studentProfileForm" onsubmit="saveProfile(event)">
+                        <!-- Personal Information -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="name">Name</label>
+                                    <input type="text" id="name" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="regNumber">Register Number</label>
+                                    <input type="text" id="regNumber" name="regNumber" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="phone">Phone Number</label>
+                                    <input type="tel" id="phone" name="phone" required>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="address">Address</label>
+                                    <textarea id="address" name="address" required></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Father's Details -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="fathersName">Father's Name</label>
+                                    <input type="text" id="fathersName" name="fathersName" required>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="fathersPhone">Father's Phone Number</label>
+                                    <input type="tel" id="fathersPhone" name="fathersPhone" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mother's Details -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="mothersName">Mother's Name</label>
+                                    <input type="text" id="mothersName" name="mothersName" required>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="mothersPhone">Mother's Phone Number</label>
+                                    <input type="tel" id="mothersPhone" name="mothersPhone" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Academic Information -->
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="course">Course</label>
+                                    <input type="text" id="course" name="course" required>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-group">
+                                    <label for="semester">Semester</label>
+                                    <select id="semester" name="semester" required>
+                                        <option value="">Select Semester</option>
+                                        <option value="1">Semester 1</option>
+                                        <option value="2">Semester 2</option>
+                                        <option value="3">Semester 3</option>
+                                        <option value="4">Semester 4</option>
+                                        <option value="5">Semester 5</option>
+                                        <option value="6">Semester 6</option>
+                                        <option value="7">Semester 7</option>
+                                        <option value="8">Semester 8</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="yearOfJoining">Year of Joining</label>
+                            <input type="number" id="yearOfJoining" name="yearOfJoining" min="2000" max="2030" required>
+                        </div>
+                        
+                        <div class="buttons">
+                            <button type="submit" class="btn">Save Profile</button>
+                        </div>
+                    </form>
+                </div>`;
+
+          // Fill the form with existing data
+          fillProfileForm();
+        }
+      }
+
+      // Initialize the app
+      document.addEventListener("DOMContentLoaded", async function () {
+        let notificationsUnsubscribe = null;
+
+        auth.onAuthStateChanged(async (user) => {
+          if (user) {
+            try {
+              await loadProfileData();
+              loadContent("dashboard");
+
+              // When switching content, clean up previous listeners
+              document.addEventListener("contentChanged", () => {
+                if (notificationsUnsubscribe) {
+                  notificationsUnsubscribe();
+                  notificationsUnsubscribe = null;
+                }
+
+                // Set up new listener if on dashboard
+                if (document.getElementById("notifications-container")) {
+                  notificationsUnsubscribe = loadNotifications();
+                }
+              });
+            } catch (error) {
+              console.error("Auth state error:", error);
+              window.location.href = "albi.html";
+            }
+          } else {
+            window.location.href = "albi.html";
+          }
+        });
+      });
+
+      // Event listener for when profile is loaded
+      document.addEventListener("profileLoaded", function () {
+        fillProfileForm();
+      });
+    </script>
+  </body>
+</html>
